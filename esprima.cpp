@@ -3130,8 +3130,8 @@ struct EsprimaParser {
         }
     };
 
-    EsprimaMarker *createLocationMarker() {
-        EsprimaMarker *marker = new EsprimaMarker(*this);
+    std::unique_ptr<EsprimaMarker> createLocationMarker() {
+        std::unique_ptr<EsprimaMarker> marker(new EsprimaMarker(*this));
 
         marker->loc = new SourceLocation(pool);
         marker->loc->start = new Position(pool);
@@ -3145,11 +3145,10 @@ struct EsprimaParser {
     }
 
     Expression *trackGroupExpression() {
-        EsprimaMarker *marker;
         Expression *expr;
 
         skipComment();
-        marker = createLocationMarker();
+        std::unique_ptr<EsprimaMarker> marker(createLocationMarker());
         expect("(");
 
         expr = parseExpression();
@@ -3163,11 +3162,10 @@ struct EsprimaParser {
     }
 
     Expression *trackLeftHandSideExpression() {
-        EsprimaMarker *marker;
         Expression *expr, *property;
 
         skipComment();
-        marker = createLocationMarker();
+        std::unique_ptr<EsprimaMarker> marker(createLocationMarker());
 
         expr = matchKeyword("new") ? parseNewExpression() : parsePrimaryExpression();
 
@@ -3189,13 +3187,12 @@ struct EsprimaParser {
     }
 
     Expression *trackLeftHandSideExpressionAllowCall() {
-        EsprimaMarker *marker;
         Expression *expr;
         std::vector<Expression *> args;
         Expression *property;
 
         skipComment();
-        marker = createLocationMarker();
+        std::unique_ptr<EsprimaMarker> marker(createLocationMarker());
 
         expr = matchKeyword("new") ? parseNewExpression() : parsePrimaryExpression();
 
@@ -3267,15 +3264,11 @@ struct EsprimaParser {
 
     struct WrapTrackingFunction {
         EsprimaParser &parser;
-        EsprimaMarker *marker;
+        std::unique_ptr<EsprimaMarker> marker;
 
         WrapTrackingFunction(EsprimaParser &parser) : parser(parser), marker() {
             parser.skipComment();
             marker = parser.createLocationMarker();
-        }
-
-        ~WrapTrackingFunction() {
-            delete marker;
         }
 
         template <typename T>

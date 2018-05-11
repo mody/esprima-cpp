@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <string>
 #include <vector>
+#include <memory>
 
 // API from https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
 
