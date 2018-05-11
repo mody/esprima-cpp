@@ -807,7 +807,7 @@ struct EsprimaParser {
 
                                 // 3 digits are only allowed when string starts
                                 // with 0, 1, 2, 3
-                                if (std::string(1, '0123').find(ch) != std::string::npos &&
+                                if (std::string("0123").find(ch) != std::string::npos &&
                                         index < length &&
                                         isOctalDigit(source[index])) {
                                     code = code * 8 + source[index++] - '0';
@@ -2990,7 +2990,6 @@ struct EsprimaParser {
         Identifier *id = NULL;
         EsprimaToken *stricted, *firstRestricted;
         std::string message;
-        ParseParams *tmp;
         std::vector<Identifier *> params;
         BlockStatement *body;
         bool previousStrict;
@@ -3015,7 +3014,7 @@ struct EsprimaParser {
             }
         }
 
-        tmp = parseParams(firstRestricted);
+        std::unique_ptr<ParseParams> tmp{parseParams(firstRestricted)};
         params = tmp->params;
         stricted = tmp->stricted;
         firstRestricted = tmp->firstRestricted;
@@ -3130,8 +3129,8 @@ struct EsprimaParser {
         }
     };
 
-    EsprimaMarker *createLocationMarker() {
-        EsprimaMarker *marker = new EsprimaMarker(*this);
+    std::unique_ptr<EsprimaMarker> createLocationMarker() {
+        std::unique_ptr<EsprimaMarker> marker(new EsprimaMarker(*this));
 
         marker->loc = new SourceLocation(pool);
         marker->loc->start = new Position(pool);
@@ -3145,11 +3144,10 @@ struct EsprimaParser {
     }
 
     Expression *trackGroupExpression() {
-        EsprimaMarker *marker;
         Expression *expr;
 
         skipComment();
-        marker = createLocationMarker();
+        std::unique_ptr<EsprimaMarker> marker(createLocationMarker());
         expect("(");
 
         expr = parseExpression();
@@ -3163,11 +3161,10 @@ struct EsprimaParser {
     }
 
     Expression *trackLeftHandSideExpression() {
-        EsprimaMarker *marker;
         Expression *expr, *property;
 
         skipComment();
-        marker = createLocationMarker();
+        std::unique_ptr<EsprimaMarker> marker(createLocationMarker());
 
         expr = matchKeyword("new") ? parseNewExpression() : parsePrimaryExpression();
 
@@ -3189,13 +3186,12 @@ struct EsprimaParser {
     }
 
     Expression *trackLeftHandSideExpressionAllowCall() {
-        EsprimaMarker *marker;
         Expression *expr;
         std::vector<Expression *> args;
         Expression *property;
 
         skipComment();
-        marker = createLocationMarker();
+        std::unique_ptr<EsprimaMarker> marker(createLocationMarker());
 
         expr = matchKeyword("new") ? parseNewExpression() : parsePrimaryExpression();
 
@@ -3236,9 +3232,9 @@ struct EsprimaParser {
         visitBinary(left);
         visitBinary(right);
 
-        if (left->groupRange || right->groupRange) {
-            int start = left->groupRange ? left->groupRange[0] : left->range[0];
-            int end = right->groupRange ? right->groupRange[1] : right->range[1];
+        if (left->groupRange[0] || right->groupRange[1]) {
+            int start = left->groupRange[0] ? left->groupRange[0] : left->range[0];
+            int end = right->groupRange[1] ? right->groupRange[1] : right->range[1];
             node->range[0] = start; node->range[1] = end;
         } else if (!node->range[1]) {
             int start = left->range[0];
@@ -3267,15 +3263,11 @@ struct EsprimaParser {
 
     struct WrapTrackingFunction {
         EsprimaParser &parser;
-        EsprimaMarker *marker;
+        std::unique_ptr<EsprimaMarker> marker;
 
         WrapTrackingFunction(EsprimaParser &parser) : parser(parser), marker() {
             parser.skipComment();
             marker = parser.createLocationMarker();
-        }
-
-        ~WrapTrackingFunction() {
-            delete marker;
         }
 
         template <typename T>

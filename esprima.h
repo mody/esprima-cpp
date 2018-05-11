@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <string>
 #include <vector>
+#include <memory>
 
 // API from https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
 
@@ -35,10 +36,10 @@ namespace esprima {
         Position(Pool &pool) : Poolable(pool), line(), column() {}
     };
 
-    struct SourceLocation {
+    struct SourceLocation : Poolable {
         Position *start;
         Position *end;
-        SourceLocation(Pool &pool) : start(), end() {}
+        SourceLocation(Pool &pool) : Poolable(pool), start(), end() {}
     };
 
     struct Program;
