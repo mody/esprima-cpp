@@ -2990,7 +2990,6 @@ struct EsprimaParser {
         Identifier *id = NULL;
         EsprimaToken *stricted, *firstRestricted;
         std::string message;
-        ParseParams *tmp;
         std::vector<Identifier *> params;
         BlockStatement *body;
         bool previousStrict;
@@ -3015,7 +3014,7 @@ struct EsprimaParser {
             }
         }
 
-        tmp = parseParams(firstRestricted);
+        std::unique_ptr<ParseParams> tmp{parseParams(firstRestricted)};
         params = tmp->params;
         stricted = tmp->stricted;
         firstRestricted = tmp->firstRestricted;
