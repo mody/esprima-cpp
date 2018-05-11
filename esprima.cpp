@@ -29,83 +29,97 @@
 */
 
 #include "esprima.h"
-#include <stdarg.h>
-#include <sstream>
-#include <set>
 #include <map>
+#include <set>
+#include <sstream>
+#include <stdarg.h>
 #undef EOF
 
 using namespace esprima;
 
-Poolable::Poolable(Pool &pool) : poolable(pool.first) {
+Poolable::Poolable(Pool& pool)
+    : poolable(pool.first)
+{
     pool.first = this;
 }
 
 namespace Token {
-    enum {
-        BooleanLiteral = 1,
-        EOF = 2,
-        Identifier = 3,
-        Keyword = 4,
-        NullLiteral = 5,
-        NumericLiteral = 6,
-        Punctuator = 7,
-        StringLiteral = 8
-    };
+enum
+{
+    BooleanLiteral = 1,
+    EOF = 2,
+    Identifier = 3,
+    Keyword = 4,
+    NullLiteral = 5,
+    NumericLiteral = 6,
+    Punctuator = 7,
+    StringLiteral = 8
+};
 }
 
 namespace PropertyKind {
-    enum {
-        Data = 1,
-        Get = 2,
-        Set = 4
-    };
+enum
+{
+    Data = 1,
+    Get = 2,
+    Set = 4
+};
 }
 
 namespace Messages {
-    static const char *UnexpectedToken = "Unexpected token %0";
-    static const char *UnexpectedNumber = "Unexpected number";
-    static const char *UnexpectedString = "Unexpected string";
-    static const char *UnexpectedIdentifier = "Unexpected identifier";
-    static const char *UnexpectedReserved = "Unexpected reserved word";
-    static const char *UnexpectedEOS = "Unexpected end of input";
-    static const char *NewlineAfterThrow = "Illegal newline after throw";
-    // static const char *InvalidRegExp = "Invalid regular expression";
-    static const char *UnterminatedRegExp = "Invalid regular expression: missing /";
-    static const char *InvalidLHSInAssignment = "Invalid left-hand side in assignment";
-    static const char *InvalidLHSInForIn = "Invalid left-hand side in for-in";
-    static const char *MultipleDefaultsInSwitch = "More than one default clause in switch statement";
-    static const char *NoCatchOrFinally = "Missing catch or finally after try";
-    static const char *UnknownLabel = "Undefined label '%0'";
-    static const char *Redeclaration = "%0 '%1' has already been declared";
-    static const char *IllegalContinue = "Illegal continue statement";
-    static const char *IllegalBreak = "Illegal break statement";
-    static const char *IllegalReturn = "Illegal return statement";
-    static const char *StrictModeWith = "Strict mode code may not include a with statement";
-    static const char *StrictCatchVariable = "Catch variable may not be eval or arguments in strict mode";
-    static const char *StrictVarName = "Variable name may not be eval or arguments in strict mode";
-    static const char *StrictParamName = "Parameter name eval or arguments is not allowed in strict mode";
-    static const char *StrictParamDupe = "Strict mode function may not have duplicate parameter names";
-    static const char *StrictFunctionName = "Function name may not be eval or arguments in strict mode";
-    static const char *StrictOctalLiteral = "Octal literals are not allowed in strict mode.";
-    static const char *StrictDelete = "Delete of an unqualified identifier in strict mode.";
-    static const char *StrictDuplicateProperty = "Duplicate data property in object literal not allowed in strict mode";
-    static const char *AccessorDataProperty = "Object literal may not have data and accessor property with the same name";
-    static const char *AccessorGetSet = "Object literal may not have multiple get/set accessors with the same name";
-    static const char *StrictLHSAssignment = "Assignment to eval or arguments is not allowed in strict mode";
-    static const char *StrictLHSPostfix = "Postfix increment/decrement may not have eval or arguments operand in strict mode";
-    static const char *StrictLHSPrefix = "Prefix increment/decrement may not have eval or arguments operand in strict mode";
-    static const char *StrictReservedWord = "Use of future reserved word in strict mode";
-}
+static const char* UnexpectedToken = "Unexpected token %0";
+static const char* UnexpectedNumber = "Unexpected number";
+static const char* UnexpectedString = "Unexpected string";
+static const char* UnexpectedIdentifier = "Unexpected identifier";
+static const char* UnexpectedReserved = "Unexpected reserved word";
+static const char* UnexpectedEOS = "Unexpected end of input";
+static const char* NewlineAfterThrow = "Illegal newline after throw";
+// static const char *InvalidRegExp = "Invalid regular expression";
+static const char* UnterminatedRegExp = "Invalid regular expression: missing /";
+static const char* InvalidLHSInAssignment = "Invalid left-hand side in assignment";
+static const char* InvalidLHSInForIn = "Invalid left-hand side in for-in";
+static const char* MultipleDefaultsInSwitch = "More than one default clause in switch statement";
+static const char* NoCatchOrFinally = "Missing catch or finally after try";
+static const char* UnknownLabel = "Undefined label '%0'";
+static const char* Redeclaration = "%0 '%1' has already been declared";
+static const char* IllegalContinue = "Illegal continue statement";
+static const char* IllegalBreak = "Illegal break statement";
+static const char* IllegalReturn = "Illegal return statement";
+static const char* StrictModeWith = "Strict mode code may not include a with statement";
+static const char* StrictCatchVariable =
+    "Catch variable may not be eval or arguments in strict mode";
+static const char* StrictVarName = "Variable name may not be eval or arguments in strict mode";
+static const char* StrictParamName =
+    "Parameter name eval or arguments is not allowed in strict mode";
+static const char* StrictParamDupe = "Strict mode function may not have duplicate parameter names";
+static const char* StrictFunctionName = "Function name may not be eval or arguments in strict mode";
+static const char* StrictOctalLiteral = "Octal literals are not allowed in strict mode.";
+static const char* StrictDelete = "Delete of an unqualified identifier in strict mode.";
+static const char* StrictDuplicateProperty =
+    "Duplicate data property in object literal not allowed in strict mode";
+static const char* AccessorDataProperty =
+    "Object literal may not have data and accessor property with the same name";
+static const char* AccessorGetSet =
+    "Object literal may not have multiple get/set accessors with the same name";
+static const char* StrictLHSAssignment =
+    "Assignment to eval or arguments is not allowed in strict mode";
+static const char* StrictLHSPostfix =
+    "Postfix increment/decrement may not have eval or arguments operand in strict mode";
+static const char* StrictLHSPrefix =
+    "Prefix increment/decrement may not have eval or arguments operand in strict mode";
+static const char* StrictReservedWord = "Use of future reserved word in strict mode";
+}  // namespace Messages
 
-static std::string format(std::string format, const std::string &arg0) {
+static std::string format(std::string format, const std::string& arg0)
+{
     size_t index = format.find("%0");
     assert(index != std::string::npos);
     format.replace(index, 2, arg0);
     return format;
 }
 
-static std::string format(std::string format, const std::string &arg0, const std::string &arg1) {
+static std::string format(std::string format, const std::string& arg0, const std::string& arg1)
+{
     size_t index = format.find("%0");
     assert(index != std::string::npos);
     format.replace(index, 2, arg0);
@@ -115,7 +129,8 @@ static std::string format(std::string format, const std::string &arg0, const std
     return format;
 }
 
-struct EsprimaToken : Poolable {
+struct EsprimaToken : Poolable
+{
     int type;
     std::string stringValue;
     double doubleValue;
@@ -124,87 +139,94 @@ struct EsprimaToken : Poolable {
     int lineStart;
     int range[2];
 
-    EsprimaToken(Pool &pool) : Poolable(pool), type(), doubleValue(), octal(), lineNumber(), lineStart() { range[0] = range[1] = 0; }
+    EsprimaToken(Pool& pool)
+        : Poolable(pool)
+        , type()
+        , doubleValue()
+        , octal()
+        , lineNumber()
+        , lineStart()
+    {
+        range[0] = range[1] = 0;
+    }
 };
 
-struct EsprimaParser {
-    static bool isDecimalDigit(int ch) {
-        return (ch >= 48 && ch <= 57);   // 0..9
+struct EsprimaParser
+{
+    static bool isDecimalDigit(int ch)
+    {
+        return (ch >= 48 && ch <= 57);  // 0..9
     }
 
-    static bool isHexDigit(int ch) {
+    static bool isHexDigit(int ch)
+    {
         return std::string("0123456789abcdefABCDEF").find(ch) != std::string::npos;
     }
 
-    static bool isOctalDigit(int ch) {
+    static bool isOctalDigit(int ch)
+    {
         return std::string("01234567").find(ch) != std::string::npos;
     }
 
     // 7.2 White Space
 
-    static bool isWhiteSpace(int ch) {
+    static bool isWhiteSpace(int ch)
+    {
         return (ch == 32) ||  // space
             (ch == 9) ||      // tab
-            (ch == 0xB) ||
-            (ch == 0xC) ||
-            (ch == 0xA0);
+            (ch == 0xB) || (ch == 0xC) || (ch == 0xA0);
     }
 
     // 7.3 Line Terminators
 
-    static bool isLineTerminator(int ch) {
+    static bool isLineTerminator(int ch)
+    {
         return (ch == 10) || (ch == 13) || (ch == 0x2028) || (ch == 0x2029);
     }
 
     // 7.6 Identifier Names and Identifiers
 
-    static bool isIdentifierStart(int ch) {
+    static bool isIdentifierStart(int ch)
+    {
         return (ch == 36) || (ch == 95) ||  // $ (dollar) and _ (underscore)
-            (ch >= 65 && ch <= 90) ||         // A..Z
-            (ch >= 97 && ch <= 122) ||        // a..z
-            (ch == 92);                      // \ (backslash)
+            (ch >= 65 && ch <= 90) ||       // A..Z
+            (ch >= 97 && ch <= 122) ||      // a..z
+            (ch == 92);                     // \ (backslash)
     }
 
-    static bool isIdentifierPart(int ch) {
+    static bool isIdentifierPart(int ch)
+    {
         return (ch == 36) || (ch == 95) ||  // $ (dollar) and _ (underscore)
-            (ch >= 65 && ch <= 90) ||         // A..Z
-            (ch >= 97 && ch <= 122) ||        // a..z
-            (ch >= 48 && ch <= 57) ||         // 0..9
-            (ch == 92);                      // \ (backslash)
+            (ch >= 65 && ch <= 90) ||       // A..Z
+            (ch >= 97 && ch <= 122) ||      // a..z
+            (ch >= 48 && ch <= 57) ||       // 0..9
+            (ch == 92);                     // \ (backslash)
     }
 
     // 7.6.1.2 Future Reserved Words
 
-    static bool isFutureReservedWord(const std::string &id) {
-        return
-            id == "class" ||
-            id == "enum" ||
-            id == "export" ||
-            id == "extends" ||
-            id == "import" ||
-            id == "super";
+    static bool isFutureReservedWord(const std::string& id)
+    {
+        return id == "class" || id == "enum" || id == "export" || id == "extends" || id == "import"
+            || id == "super";
     }
 
-    static bool isStrictModeReservedWord(const std::string &id) {
-        return
-            id == "implements" ||
-            id == "interface" ||
-            id == "package" ||
-            id == "private" ||
-            id == "protected" ||
-            id == "public" ||
-            id == "static" ||
-            id == "yield" ||
-            id == "let";
+    static bool isStrictModeReservedWord(const std::string& id)
+    {
+        return id == "implements" || id == "interface" || id == "package" || id == "private"
+            || id == "protected" || id == "public" || id == "static" || id == "yield"
+            || id == "let";
     }
 
-    static bool isRestrictedWord(const std::string &id) {
+    static bool isRestrictedWord(const std::string& id)
+    {
         return id == "eval" || id == "arguments";
     }
 
     // 7.6.1.1 Keywords
 
-    bool isKeyword(const std::string &id) {
+    bool isKeyword(const std::string& id)
+    {
         if (strict && isStrictModeReservedWord(id)) {
             return true;
         }
@@ -213,47 +235,21 @@ struct EsprimaParser {
         // 'yield' and 'let' are for compatiblity with SpiderMonkey and ES.next.
         // Some others are from future reserved words.
 
-        return
-            (id == "if") ||
-            (id == "in") ||
-            (id == "do") ||
-            (id == "var") ||
-            (id == "for") ||
-            (id == "new") ||
-            (id == "try") ||
-            (id == "let") ||
-            (id == "this") ||
-            (id == "else") ||
-            (id == "case") ||
-            (id == "void") ||
-            (id == "with") ||
-            (id == "enum") ||
-            (id == "while") ||
-            (id == "break") ||
-            (id == "catch") ||
-            (id == "throw") ||
-            (id == "const") ||
-            (id == "yield") ||
-            (id == "class") ||
-            (id == "super") ||
-            (id == "return") ||
-            (id == "typeof") ||
-            (id == "delete") ||
-            (id == "switch") ||
-            (id == "export") ||
-            (id == "import") ||
-            (id == "default") ||
-            (id == "finally") ||
-            (id == "extends") ||
-            (id == "function") ||
-            (id == "continue") ||
-            (id == "debugger") ||
-            (id == "instanceof");
+        return (id == "if") || (id == "in") || (id == "do") || (id == "var") || (id == "for")
+            || (id == "new") || (id == "try") || (id == "let") || (id == "this") || (id == "else")
+            || (id == "case") || (id == "void") || (id == "with") || (id == "enum")
+            || (id == "while") || (id == "break") || (id == "catch") || (id == "throw")
+            || (id == "const") || (id == "yield") || (id == "class") || (id == "super")
+            || (id == "return") || (id == "typeof") || (id == "delete") || (id == "switch")
+            || (id == "export") || (id == "import") || (id == "default") || (id == "finally")
+            || (id == "extends") || (id == "function") || (id == "continue") || (id == "debugger")
+            || (id == "instanceof");
     }
 
     // 7.4 Comments
 
-    void skipComment() {
+    void skipComment()
+    {
         int ch;
         bool blockComment;
         bool lineComment;
@@ -330,7 +326,8 @@ struct EsprimaParser {
         }
     }
 
-    int scanHexEscape(int prefix) {
+    int scanHexEscape(int prefix)
+    {
         int i, len, ch, code = 0;
 
         len = (prefix == 'u') ? 4 : 2;
@@ -345,7 +342,8 @@ struct EsprimaParser {
         return code;
     }
 
-    std::string getEscapedIdentifier() {
+    std::string getEscapedIdentifier()
+    {
         int ch;
         std::string id;
 
@@ -391,7 +389,8 @@ struct EsprimaParser {
         return id;
     }
 
-    std::string getIdentifier() {
+    std::string getIdentifier()
+    {
         int start, ch;
 
         start = index++;
@@ -412,7 +411,8 @@ struct EsprimaParser {
         return source.substr(start, index - start);
     }
 
-    EsprimaToken *scanIdentifier() {
+    EsprimaToken* scanIdentifier()
+    {
         int start, type;
         std::string id;
 
@@ -435,20 +435,22 @@ struct EsprimaParser {
             type = Token::Identifier;
         }
 
-        EsprimaToken *token = new EsprimaToken(pool);
+        EsprimaToken* token = new EsprimaToken(pool);
         token->type = type;
         token->stringValue = id;
         token->lineNumber = lineNumber;
         token->lineStart = lineStart;
-        token->range[0] = start; token->range[1] = index;
+        token->range[0] = start;
+        token->range[1] = index;
         return token;
     }
 
 
     // 7.7 Punctuators
 
-    EsprimaToken *scanPunctuator() {
-        EsprimaToken *token;
+    EsprimaToken* scanPunctuator()
+    {
+        EsprimaToken* token;
         int start = index;
         int code = source[index];
         int code2;
@@ -458,7 +460,6 @@ struct EsprimaParser {
         int ch4;
 
         switch (code) {
-
         // Check for most common single-character punctuators.
         case 46:   // . dot
         case 40:   // ( open bracket
@@ -478,7 +479,8 @@ struct EsprimaParser {
             token->stringValue = std::string(1, code);
             token->lineNumber = lineNumber;
             token->lineStart = lineStart;
-            token->range[0] = start; token->range[1] = index;
+            token->range[0] = start;
+            token->range[1] = index;
             return token;
 
         default:
@@ -487,27 +489,28 @@ struct EsprimaParser {
             // '=' (char #61) marks an assignment or comparison operator.
             if (code2 == 61) {
                 switch (code) {
-                case 37:  // %
-                case 38:  // &
-                case 42:  // *:
-                case 43:  // +
-                case 45:  // -
-                case 47:  // /
-                case 60:  // <
-                case 62:  // >
-                case 94:  // ^
-                case 124: // |
+                case 37:   // %
+                case 38:   // &
+                case 42:   // *:
+                case 43:   // +
+                case 45:   // -
+                case 47:   // /
+                case 60:   // <
+                case 62:   // >
+                case 94:   // ^
+                case 124:  // |
                     index += 2;
                     token = new EsprimaToken(pool);
                     token->type = Token::Punctuator;
                     token->stringValue = std::string(1, code) + std::string(1, code2);
                     token->lineNumber = lineNumber;
                     token->lineStart = lineStart;
-                    token->range[0] = start; token->range[1] = index;
+                    token->range[0] = start;
+                    token->range[1] = index;
                     return token;
 
-                case 33: // !
-                case 61: // =
+                case 33:  // !
+                case 61:  // =
                     index += 2;
 
                     // != and ==
@@ -519,11 +522,11 @@ struct EsprimaParser {
                     token->stringValue = source.substr(start, index - start);
                     token->lineNumber = lineNumber;
                     token->lineStart = lineStart;
-                    token->range[0] = start; token->range[1] = index;
+                    token->range[0] = start;
+                    token->range[1] = index;
                     return token;
 
-                default:
-                    break;
+                default: break;
                 }
             }
             break;
@@ -545,7 +548,8 @@ struct EsprimaParser {
                 token->stringValue = ">>>=";
                 token->lineNumber = lineNumber;
                 token->lineStart = lineStart;
-                token->range[0] = start; token->range[1] = index;
+                token->range[0] = start;
+                token->range[1] = index;
                 return token;
             }
         }
@@ -559,7 +563,8 @@ struct EsprimaParser {
             token->stringValue = ">>>";
             token->lineNumber = lineNumber;
             token->lineStart = lineStart;
-            token->range[0] = start; token->range[1] = index;
+            token->range[0] = start;
+            token->range[1] = index;
             return token;
         }
 
@@ -570,7 +575,8 @@ struct EsprimaParser {
             token->stringValue = "<<=";
             token->lineNumber = lineNumber;
             token->lineStart = lineStart;
-            token->range[0] = start; token->range[1] = index;
+            token->range[0] = start;
+            token->range[1] = index;
             return token;
         }
 
@@ -581,7 +587,8 @@ struct EsprimaParser {
             token->stringValue = ">>=";
             token->lineNumber = lineNumber;
             token->lineStart = lineStart;
-            token->range[0] = start; token->range[1] = index;
+            token->range[0] = start;
+            token->range[1] = index;
             return token;
         }
 
@@ -594,7 +601,8 @@ struct EsprimaParser {
             token->stringValue = std::string(1, ch1) + std::string(1, ch2);
             token->lineNumber = lineNumber;
             token->lineStart = lineStart;
-            token->range[0] = start; token->range[1] = index;
+            token->range[0] = start;
+            token->range[1] = index;
             return token;
         }
 
@@ -605,7 +613,8 @@ struct EsprimaParser {
             token->stringValue = std::string(1, ch1);
             token->lineNumber = lineNumber;
             token->lineStart = lineStart;
-            token->range[0] = start; token->range[1] = index;
+            token->range[0] = start;
+            token->range[1] = index;
             return token;
         }
 
@@ -614,7 +623,8 @@ struct EsprimaParser {
 
     // 7.8.3 Numeric Literals
 
-    EsprimaToken *scanHexLiteral(int start) {
+    EsprimaToken* scanHexLiteral(int start)
+    {
         std::string number = "";
 
         while (index < length) {
@@ -632,16 +642,18 @@ struct EsprimaParser {
             throwError(NULL, format(Messages::UnexpectedToken, "ILLEGAL"));
         }
 
-        EsprimaToken *token = new EsprimaToken(pool);
+        EsprimaToken* token = new EsprimaToken(pool);
         token->type = Token::NumericLiteral;
         std::stringstream(number) >> std::hex >> token->doubleValue;
         token->lineNumber = lineNumber;
         token->lineStart = lineStart;
-        token->range[0] = start; token->range[1] = index;
+        token->range[0] = start;
+        token->range[1] = index;
         return token;
     }
 
-    EsprimaToken *scanOctalLiteral(int start) {
+    EsprimaToken* scanOctalLiteral(int start)
+    {
         std::string number = std::string(1, source[index++]);
         while (index < length) {
             if (!isOctalDigit(source[index])) {
@@ -654,23 +666,26 @@ struct EsprimaParser {
             throwError(NULL, format(Messages::UnexpectedToken, "ILLEGAL"));
         }
 
-        EsprimaToken *token = new EsprimaToken(pool);
+        EsprimaToken* token = new EsprimaToken(pool);
         token->type = Token::NumericLiteral;
         std::stringstream(number) >> std::oct >> token->doubleValue;
         token->octal = true;
         token->lineNumber = lineNumber;
         token->lineStart = lineStart;
-        token->range[0] = start; token->range[1] = index;
+        token->range[0] = start;
+        token->range[1] = index;
         return token;
     }
 
-    EsprimaToken *scanNumericLiteral() {
+    EsprimaToken* scanNumericLiteral()
+    {
         std::string number;
         int start, ch;
 
         ch = source[index];
-        assert(isDecimalDigit(ch) || (ch == '.') &&
-            "Numeric literal must start with a decimal digit or a decimal point");
+        assert(
+            isDecimalDigit(ch)
+            || (ch == '.') && "Numeric literal must start with a decimal digit or a decimal point");
 
         start = index;
         number = "";
@@ -729,25 +744,26 @@ struct EsprimaParser {
             throwError(NULL, format(Messages::UnexpectedToken, "ILLEGAL"));
         }
 
-        EsprimaToken *token = new EsprimaToken(pool);
+        EsprimaToken* token = new EsprimaToken(pool);
         token->type = Token::NumericLiteral;
         std::stringstream(number) >> token->doubleValue;
         token->lineNumber = lineNumber;
         token->lineStart = lineStart;
-        token->range[0] = start; token->range[1] = index;
+        token->range[0] = start;
+        token->range[1] = index;
         return token;
     }
 
     // 7.8.4 String Literals
 
-    EsprimaToken *scanStringLiteral() {
+    EsprimaToken* scanStringLiteral()
+    {
         std::string str = "";
         int quote, start, ch, code, unescaped, restore;
         bool octal = false;
 
         quote = source[index];
-        assert((quote == '\'' || quote == '"') &&
-            "String literal must starts with a quote");
+        assert((quote == '\'' || quote == '"') && "String literal must starts with a quote");
 
         start = index;
         ++index;
@@ -762,15 +778,9 @@ struct EsprimaParser {
                 ch = source[index++];
                 if (!ch || !isLineTerminator(ch)) {
                     switch (ch) {
-                    case 'n':
-                        str += '\n';
-                        break;
-                    case 'r':
-                        str += '\r';
-                        break;
-                    case 't':
-                        str += '\t';
-                        break;
+                    case 'n': str += '\n'; break;
+                    case 'r': str += '\r'; break;
+                    case 't': str += '\t'; break;
                     case 'u':
                     case 'x':
                         restore = index;
@@ -782,15 +792,9 @@ struct EsprimaParser {
                             str += ch;
                         }
                         break;
-                    case 'b':
-                        str += '\b';
-                        break;
-                    case 'f':
-                        str += '\f';
-                        break;
-                    case 'v':
-                        str += '\v';
-                        break;
+                    case 'b': str += '\b'; break;
+                    case 'f': str += '\f'; break;
+                    case 'v': str += '\v'; break;
 
                     default:
                         if (isOctalDigit(ch)) {
@@ -807,9 +811,8 @@ struct EsprimaParser {
 
                                 // 3 digits are only allowed when string starts
                                 // with 0, 1, 2, 3
-                                if (std::string("0123").find(ch) != std::string::npos &&
-                                        index < length &&
-                                        isOctalDigit(source[index])) {
+                                if (std::string("0123").find(ch) != std::string::npos
+                                    && index < length && isOctalDigit(source[index])) {
                                     code = code * 8 + source[index++] - '0';
                                 }
                             }
@@ -821,7 +824,7 @@ struct EsprimaParser {
                     }
                 } else {
                     ++lineNumber;
-                    if (ch ==  '\r' && source[index] == '\n') {
+                    if (ch == '\r' && source[index] == '\n') {
                         ++index;
                     }
                 }
@@ -836,28 +839,39 @@ struct EsprimaParser {
             throwError(NULL, format(Messages::UnexpectedToken, "ILLEGAL"));
         }
 
-        EsprimaToken *token = new EsprimaToken(pool);
+        EsprimaToken* token = new EsprimaToken(pool);
         token->type = Token::StringLiteral;
         token->stringValue = str;
         token->octal = octal;
         token->lineNumber = lineNumber;
         token->lineStart = lineStart;
-        token->range[0] = start; token->range[1] = index;
+        token->range[0] = start;
+        token->range[1] = index;
         return token;
     }
 
-    struct EsprimaRegExp {
+    struct EsprimaRegExp
+    {
         std::string literal, pattern, flags;
         int range[2];
 
-        EsprimaRegExp(const std::string &literal, const std::string &pattern, const std::string &flags, int rangeMin, int rangeMax)
-                : literal(literal), pattern(pattern), flags(flags) {
+        EsprimaRegExp(
+            const std::string& literal,
+            const std::string& pattern,
+            const std::string& flags,
+            int rangeMin,
+            int rangeMax)
+            : literal(literal)
+            , pattern(pattern)
+            , flags(flags)
+        {
             range[0] = rangeMin;
             range[1] = rangeMax;
         }
     };
 
-    EsprimaRegExp *scanRegExp() {
+    EsprimaRegExp* scanRegExp()
+    {
         std::string str;
         int ch, start;
         std::string pattern, flags;
@@ -941,32 +955,28 @@ struct EsprimaParser {
 
         peek();
 
-        return new EsprimaRegExp(
-            str,
-            pattern,
-            flags,
-            start, index
-        );
+        return new EsprimaRegExp(str, pattern, flags, start, index);
     }
 
-    bool isIdentifierName(EsprimaToken *token) {
-        return token->type == Token::Identifier ||
-            token->type == Token::Keyword ||
-            token->type == Token::BooleanLiteral ||
-            token->type == Token::NullLiteral;
+    bool isIdentifierName(EsprimaToken* token)
+    {
+        return token->type == Token::Identifier || token->type == Token::Keyword
+            || token->type == Token::BooleanLiteral || token->type == Token::NullLiteral;
     }
 
-    EsprimaToken *advance() {
+    EsprimaToken* advance()
+    {
         int ch;
 
         skipComment();
 
         if (index >= length) {
-            EsprimaToken *token = new EsprimaToken(pool);
+            EsprimaToken* token = new EsprimaToken(pool);
             token->type = Token::EOF;
             token->lineNumber = lineNumber;
             token->lineStart = lineStart;
-            token->range[0] = index; token->range[1] = index;
+            token->range[0] = index;
+            token->range[1] = index;
             return token;
         }
 
@@ -1002,8 +1012,9 @@ struct EsprimaParser {
         return scanPunctuator();
     }
 
-    EsprimaToken *lex() {
-        EsprimaToken *token;
+    EsprimaToken* lex()
+    {
+        EsprimaToken* token;
 
         token = lookahead;
         index = token->range[1];
@@ -1019,7 +1030,8 @@ struct EsprimaParser {
         return token;
     }
 
-    void peek() {
+    void peek()
+    {
         int pos, line, start;
 
         pos = index;
@@ -1031,36 +1043,43 @@ struct EsprimaParser {
         lineStart = start;
     }
 
-    struct SyntaxTreeDelegate {
-        EsprimaParser &parser;
-        SyntaxTreeDelegate(EsprimaParser &parser) : parser(parser) {}
+    struct SyntaxTreeDelegate
+    {
+        EsprimaParser& parser;
+        SyntaxTreeDelegate(EsprimaParser& parser)
+            : parser(parser)
+        {}
 
-        void postProcess(Node *node) {
-        }
+        void postProcess(Node* node) {}
 
-        ArrayExpression *createArrayExpression(const std::vector<Expression *> &elements) {
-            ArrayExpression *node = new ArrayExpression(parser.pool);
+        ArrayExpression* createArrayExpression(const std::vector<Expression*>& elements)
+        {
+            ArrayExpression* node = new ArrayExpression(parser.pool);
             node->elements = elements;
             return node;
         }
 
-        AssignmentExpression *createAssignmentExpression(const std::string &operator_, Expression *left, Expression *right) {
-            AssignmentExpression *node = new AssignmentExpression(parser.pool);
+        AssignmentExpression* createAssignmentExpression(
+            const std::string& operator_, Expression* left, Expression* right)
+        {
+            AssignmentExpression* node = new AssignmentExpression(parser.pool);
             node->operator_ = operator_;
             node->left = left;
             node->right = right;
             return node;
         }
 
-        Expression *createBinaryExpression(const std::string &operator_, Expression *left, Expression *right) {
+        Expression* createBinaryExpression(
+            const std::string& operator_, Expression* left, Expression* right)
+        {
             if (operator_ == "||" || operator_ == "&&") {
-                LogicalExpression *node = new LogicalExpression(parser.pool);
+                LogicalExpression* node = new LogicalExpression(parser.pool);
                 node->operator_ = operator_;
                 node->left = left;
                 node->right = right;
                 return node;
             } else {
-                BinaryExpression *node = new BinaryExpression(parser.pool);
+                BinaryExpression* node = new BinaryExpression(parser.pool);
                 node->operator_ = operator_;
                 node->left = left;
                 node->right = right;
@@ -1068,71 +1087,85 @@ struct EsprimaParser {
             }
         }
 
-        BlockStatement *createBlockStatement(const std::vector<Statement *> &body) {
-            BlockStatement *node = new BlockStatement(parser.pool);
+        BlockStatement* createBlockStatement(const std::vector<Statement*>& body)
+        {
+            BlockStatement* node = new BlockStatement(parser.pool);
             node->body = body;
             return node;
         }
 
-        BreakStatement *createBreakStatement(Identifier *label) {
-            BreakStatement *node = new BreakStatement(parser.pool);
+        BreakStatement* createBreakStatement(Identifier* label)
+        {
+            BreakStatement* node = new BreakStatement(parser.pool);
             node->label = label;
             return node;
         }
 
-        CallExpression *createCallExpression(Expression *callee, const std::vector<Expression *> &args) {
-            CallExpression *node = new CallExpression(parser.pool);
+        CallExpression* createCallExpression(
+            Expression* callee, const std::vector<Expression*>& args)
+        {
+            CallExpression* node = new CallExpression(parser.pool);
             node->callee = callee;
             node->arguments = args;
             return node;
         }
 
-        CatchClause *createCatchClause(Expression *param, BlockStatement *body) {
-            CatchClause *node = new CatchClause(parser.pool);
+        CatchClause* createCatchClause(Expression* param, BlockStatement* body)
+        {
+            CatchClause* node = new CatchClause(parser.pool);
             node->param = param;
             node->body = body;
             return node;
         }
 
-        ConditionalExpression *createConditionalExpression(Expression *test, Expression *consequent, Expression *alternate) {
-            ConditionalExpression *node = new ConditionalExpression(parser.pool);
+        ConditionalExpression* createConditionalExpression(
+            Expression* test, Expression* consequent, Expression* alternate)
+        {
+            ConditionalExpression* node = new ConditionalExpression(parser.pool);
             node->test = test;
             node->consequent = consequent;
             node->alternate = alternate;
             return node;
         }
 
-        ContinueStatement *createContinueStatement(Identifier *label) {
-            ContinueStatement *node = new ContinueStatement(parser.pool);
+        ContinueStatement* createContinueStatement(Identifier* label)
+        {
+            ContinueStatement* node = new ContinueStatement(parser.pool);
             node->label = label;
             return node;
         }
 
-        DebuggerStatement *createDebuggerStatement() {
-            DebuggerStatement *node = new DebuggerStatement(parser.pool);
+        DebuggerStatement* createDebuggerStatement()
+        {
+            DebuggerStatement* node = new DebuggerStatement(parser.pool);
             return node;
         }
 
-        DoWhileStatement *createDoWhileStatement(Statement *body, Expression *test) {
-            DoWhileStatement *node = new DoWhileStatement(parser.pool);
+        DoWhileStatement* createDoWhileStatement(Statement* body, Expression* test)
+        {
+            DoWhileStatement* node = new DoWhileStatement(parser.pool);
             node->body = body;
             node->test = test;
             return node;
         }
 
-        EmptyStatement *createEmptyStatement() {
-            EmptyStatement *node = new EmptyStatement(parser.pool);
+        EmptyStatement* createEmptyStatement()
+        {
+            EmptyStatement* node = new EmptyStatement(parser.pool);
             return node;
         }
 
-        ExpressionStatement *createExpressionStatement(Expression *expression) {
-            ExpressionStatement *node = new ExpressionStatement(parser.pool);
+        ExpressionStatement* createExpressionStatement(Expression* expression)
+        {
+            ExpressionStatement* node = new ExpressionStatement(parser.pool);
             node->expression = expression;
             return node;
         }
 
-        ForStatement *createForStatement(Node *init, Expression *test, Expression *update, Statement *body) {
-            ForStatement *node = new ForStatement(parser.pool);
+        ForStatement* createForStatement(
+            Node* init, Expression* test, Expression* update, Statement* body)
+        {
+            ForStatement* node = new ForStatement(parser.pool);
             node->init = init;
             node->test = test;
             node->update = update;
@@ -1140,65 +1173,75 @@ struct EsprimaParser {
             return node;
         }
 
-        ForInStatement *createForInStatement(Node *left, Expression *right, Statement *body) {
-            ForInStatement *node = new ForInStatement(parser.pool);
+        ForInStatement* createForInStatement(Node* left, Expression* right, Statement* body)
+        {
+            ForInStatement* node = new ForInStatement(parser.pool);
             node->left = left;
             node->right = right;
             node->body = body;
             return node;
         }
 
-        FunctionDeclaration *createFunctionDeclaration(Identifier *id, const std::vector<Identifier *> &params, BlockStatement *body) {
-            FunctionDeclaration *node = new FunctionDeclaration(parser.pool);
+        FunctionDeclaration* createFunctionDeclaration(
+            Identifier* id, const std::vector<Identifier*>& params, BlockStatement* body)
+        {
+            FunctionDeclaration* node = new FunctionDeclaration(parser.pool);
             node->id = id;
             node->params = params;
             node->body = body;
             return node;
         }
 
-        FunctionExpression *createFunctionExpression(Identifier *id, const std::vector<Identifier *> &params, BlockStatement *body) {
-            FunctionExpression *node = new FunctionExpression(parser.pool);
+        FunctionExpression* createFunctionExpression(
+            Identifier* id, const std::vector<Identifier*>& params, BlockStatement* body)
+        {
+            FunctionExpression* node = new FunctionExpression(parser.pool);
             node->id = id;
             node->params = params;
             node->body = body;
             return node;
         }
 
-        Identifier *createIdentifier(const std::string &name) {
-            Identifier *node = new Identifier(parser.pool);
+        Identifier* createIdentifier(const std::string& name)
+        {
+            Identifier* node = new Identifier(parser.pool);
             node->name = name;
             return node;
         }
 
-        IfStatement *createIfStatement(Expression *test, Statement *consequent, Statement *alternate) {
-            IfStatement *node = new IfStatement(parser.pool);
+        IfStatement* createIfStatement(
+            Expression* test, Statement* consequent, Statement* alternate)
+        {
+            IfStatement* node = new IfStatement(parser.pool);
             node->test = test;
             node->consequent = consequent;
             node->alternate = alternate;
             return node;
         }
 
-        LabeledStatement *createLabeledStatement(Identifier *label, Statement *body) {
-            LabeledStatement *node = new LabeledStatement(parser.pool);
+        LabeledStatement* createLabeledStatement(Identifier* label, Statement* body)
+        {
+            LabeledStatement* node = new LabeledStatement(parser.pool);
             node->label = label;
             node->body = body;
             return node;
         }
 
-        Literal *createLiteral(EsprimaToken *token) {
+        Literal* createLiteral(EsprimaToken* token)
+        {
             if (token->type == Token::NumericLiteral) {
-                NumericLiteral *node = new NumericLiteral(parser.pool);
+                NumericLiteral* node = new NumericLiteral(parser.pool);
                 node->value = token->doubleValue;
                 return node;
             } else if (token->type == Token::NullLiteral) {
-                NullLiteral *node = new NullLiteral(parser.pool);
+                NullLiteral* node = new NullLiteral(parser.pool);
                 return node;
             } else if (token->type == Token::StringLiteral) {
-                StringLiteral *node = new StringLiteral(parser.pool);
+                StringLiteral* node = new StringLiteral(parser.pool);
                 node->value = token->stringValue;
                 return node;
             } else if (token->type == Token::BooleanLiteral) {
-                BooleanLiteral *node = new BooleanLiteral(parser.pool);
+                BooleanLiteral* node = new BooleanLiteral(parser.pool);
                 node->value = token->stringValue == "true";
                 return node;
             } else {
@@ -1206,139 +1249,163 @@ struct EsprimaParser {
             }
         }
 
-        Literal *createLiteral(EsprimaRegExp *token) {
-            RegExpLiteral *node = new RegExpLiteral(parser.pool);
+        Literal* createLiteral(EsprimaRegExp* token)
+        {
+            RegExpLiteral* node = new RegExpLiteral(parser.pool);
             node->pattern = token->pattern;
             node->flags = token->flags;
             return node;
         }
 
-        MemberExpression *createMemberExpression(int accessor, Expression *object, Expression *property) {
-            MemberExpression *node = new MemberExpression(parser.pool);
+        MemberExpression* createMemberExpression(
+            int accessor, Expression* object, Expression* property)
+        {
+            MemberExpression* node = new MemberExpression(parser.pool);
             node->computed = accessor == '[';
             node->object = object;
             node->property = property;
             return node;
         }
 
-        NewExpression *createNewExpression(Expression *callee, const std::vector<Expression *> &args) {
-            NewExpression *node = new NewExpression(parser.pool);
+        NewExpression* createNewExpression(Expression* callee, const std::vector<Expression*>& args)
+        {
+            NewExpression* node = new NewExpression(parser.pool);
             node->callee = callee;
             node->arguments = args;
             return node;
         }
 
-        ObjectExpression *createObjectExpression(const std::vector<Property *> &properties) {
-            ObjectExpression *node = new ObjectExpression(parser.pool);
+        ObjectExpression* createObjectExpression(const std::vector<Property*>& properties)
+        {
+            ObjectExpression* node = new ObjectExpression(parser.pool);
             node->properties = properties;
             return node;
         }
 
-        UpdateExpression *createPostfixExpression(const std::string &operator_, Expression *argument) {
-            UpdateExpression *node = new UpdateExpression(parser.pool);
+        UpdateExpression* createPostfixExpression(
+            const std::string& operator_, Expression* argument)
+        {
+            UpdateExpression* node = new UpdateExpression(parser.pool);
             node->operator_ = operator_;
             node->argument = argument;
             node->prefix = false;
             return node;
         }
 
-        Program *createProgram(const std::vector<Statement *> &body) {
-            Program *node = new Program(parser.pool);
+        Program* createProgram(const std::vector<Statement*>& body)
+        {
+            Program* node = new Program(parser.pool);
             node->body = body;
             return node;
         }
 
-        Property *createProperty(const std::string &kind, Expression *key, Expression *value) {
-            Property *node = new Property(parser.pool);
+        Property* createProperty(const std::string& kind, Expression* key, Expression* value)
+        {
+            Property* node = new Property(parser.pool);
             node->key = key;
             node->value = value;
             node->kind = kind;
             return node;
         }
 
-        ReturnStatement *createReturnStatement(Expression *argument) {
-            ReturnStatement *node = new ReturnStatement(parser.pool);
+        ReturnStatement* createReturnStatement(Expression* argument)
+        {
+            ReturnStatement* node = new ReturnStatement(parser.pool);
             node->argument = argument;
             return node;
         }
 
-        SequenceExpression *createSequenceExpression(const std::vector<Expression *> &expressions) {
-            SequenceExpression *node = new SequenceExpression(parser.pool);
+        SequenceExpression* createSequenceExpression(const std::vector<Expression*>& expressions)
+        {
+            SequenceExpression* node = new SequenceExpression(parser.pool);
             node->expressions = expressions;
             return node;
         }
 
-        SwitchCase *createSwitchCase(Expression *test, const std::vector<Statement *> &consequent) {
-            SwitchCase *node = new SwitchCase(parser.pool);
+        SwitchCase* createSwitchCase(Expression* test, const std::vector<Statement*>& consequent)
+        {
+            SwitchCase* node = new SwitchCase(parser.pool);
             node->test = test;
             node->consequent = consequent;
             return node;
         }
 
-        SwitchStatement *createSwitchStatement(Expression *discriminant, const std::vector<SwitchCase *> &cases) {
-            SwitchStatement *node = new SwitchStatement(parser.pool);
+        SwitchStatement* createSwitchStatement(
+            Expression* discriminant, const std::vector<SwitchCase*>& cases)
+        {
+            SwitchStatement* node = new SwitchStatement(parser.pool);
             node->discriminant = discriminant;
             node->cases = cases;
             return node;
         }
 
-        ThisExpression *createThisExpression() {
-            ThisExpression *node = new ThisExpression(parser.pool);
+        ThisExpression* createThisExpression()
+        {
+            ThisExpression* node = new ThisExpression(parser.pool);
             return node;
         }
 
-        ThrowStatement *createThrowStatement(Expression *argument) {
-            ThrowStatement *node = new ThrowStatement(parser.pool);
+        ThrowStatement* createThrowStatement(Expression* argument)
+        {
+            ThrowStatement* node = new ThrowStatement(parser.pool);
             node->argument = argument;
             return node;
         }
 
-        TryStatement *createTryStatement(BlockStatement *block, CatchClause *handler, BlockStatement *finalizer) {
-            TryStatement *node = new TryStatement(parser.pool);
+        TryStatement* createTryStatement(
+            BlockStatement* block, CatchClause* handler, BlockStatement* finalizer)
+        {
+            TryStatement* node = new TryStatement(parser.pool);
             node->block = block;
             node->handler = handler;
             node->finalizer = finalizer;
             return node;
         }
 
-        Expression *createUnaryExpression(const std::string &operator_, Expression *argument) {
+        Expression* createUnaryExpression(const std::string& operator_, Expression* argument)
+        {
             if (operator_ == "++" || operator_ == "--") {
-                UpdateExpression *node = new UpdateExpression(parser.pool);
+                UpdateExpression* node = new UpdateExpression(parser.pool);
                 node->operator_ = operator_;
                 node->argument = argument;
                 node->prefix = true;
                 return node;
             } else {
-                UnaryExpression *node = new UnaryExpression(parser.pool);
+                UnaryExpression* node = new UnaryExpression(parser.pool);
                 node->operator_ = operator_;
                 node->argument = argument;
                 return node;
             }
         }
 
-        VariableDeclaration *createVariableDeclaration(const std::vector<VariableDeclarator *> &declarations, const std::string &kind) {
-            VariableDeclaration *node = new VariableDeclaration(parser.pool);
+        VariableDeclaration* createVariableDeclaration(
+            const std::vector<VariableDeclarator*>& declarations, const std::string& kind)
+        {
+            VariableDeclaration* node = new VariableDeclaration(parser.pool);
             node->declarations = declarations;
             node->kind = kind;
             return node;
         }
 
-        VariableDeclarator *createVariableDeclarator(Identifier *id, Expression *init) {
-            VariableDeclarator *node = new VariableDeclarator(parser.pool);
+        VariableDeclarator* createVariableDeclarator(Identifier* id, Expression* init)
+        {
+            VariableDeclarator* node = new VariableDeclarator(parser.pool);
             node->id = id;
             node->init = init;
             return node;
         }
 
-        WhileStatement *createWhileStatement(Expression *test, Statement *body) {
-            WhileStatement *node = new WhileStatement(parser.pool);
+        WhileStatement* createWhileStatement(Expression* test, Statement* body)
+        {
+            WhileStatement* node = new WhileStatement(parser.pool);
             node->test = test;
             node->body = body;
             return node;
         }
 
-        WithStatement *createWithStatement(Expression *object, Statement *body) {
-            WithStatement *node = new WithStatement(parser.pool);
+        WithStatement* createWithStatement(Expression* object, Statement* body)
+        {
+            WithStatement* node = new WithStatement(parser.pool);
             node->object = object;
             node->body = body;
             return node;
@@ -1347,7 +1414,8 @@ struct EsprimaParser {
 
     // Return true if there is a line terminator before the next token.
 
-    bool peekLineTerminator() {
+    bool peekLineTerminator()
+    {
         int pos, line, start, found;
 
         pos = index;
@@ -1364,7 +1432,8 @@ struct EsprimaParser {
 
     // Throw an exception
 
-    void throwError(EsprimaToken *token, const std::string &msg) __attribute__((noreturn)) {
+    void throwError(EsprimaToken* token, const std::string& msg) __attribute__((noreturn))
+    {
         ParseError error;
 
         if (token) {
@@ -1389,7 +1458,8 @@ struct EsprimaParser {
 
     // Throw an exception because of the token.
 
-    void throwUnexpected(EsprimaToken *token) __attribute__((noreturn)) {
+    void throwUnexpected(EsprimaToken* token) __attribute__((noreturn))
+    {
         if (token->type == Token::EOF) {
             throwError(token, Messages::UnexpectedEOS);
         }
@@ -1423,8 +1493,9 @@ struct EsprimaParser {
     // Expect the next token to match the specified punctuator.
     // If not, an exception will be thrown.
 
-    void expect(const std::string &value) {
-        EsprimaToken *token = lex();
+    void expect(const std::string& value)
+    {
+        EsprimaToken* token = lex();
         if (token->type != Token::Punctuator || token->stringValue != value) {
             throwUnexpected(token);
         }
@@ -1433,8 +1504,9 @@ struct EsprimaParser {
     // Expect the next token to match the specified keyword.
     // If not, an exception will be thrown.
 
-    void expectKeyword(const std::string &keyword) {
-        EsprimaToken *token = lex();
+    void expectKeyword(const std::string& keyword)
+    {
+        EsprimaToken* token = lex();
         if (token->type != Token::Keyword || token->stringValue != keyword) {
             throwUnexpected(token);
         }
@@ -1442,40 +1514,34 @@ struct EsprimaParser {
 
     // Return true if the next token matches the specified punctuator.
 
-    bool match(const std::string &value) {
+    bool match(const std::string& value)
+    {
         return lookahead->type == Token::Punctuator && lookahead->stringValue == value;
     }
 
     // Return true if the next token matches the specified keyword
 
-    bool matchKeyword(const std::string &keyword) {
+    bool matchKeyword(const std::string& keyword)
+    {
         return lookahead->type == Token::Keyword && lookahead->stringValue == keyword;
     }
 
     // Return true if the next token is an assignment operator
 
-    bool matchAssign() {
+    bool matchAssign()
+    {
         std::string op;
 
         if (lookahead->type != Token::Punctuator) {
             return false;
         }
         op = lookahead->stringValue;
-        return op == "=" ||
-            op == "*=" ||
-            op == "/=" ||
-            op == "%=" ||
-            op == "+=" ||
-            op == "-=" ||
-            op == "<<=" ||
-            op == ">>=" ||
-            op == ">>>=" ||
-            op == "&=" ||
-            op == "^=" ||
-            op == "|=";
+        return op == "=" || op == "*=" || op == "/=" || op == "%=" || op == "+=" || op == "-="
+            || op == "<<=" || op == ">>=" || op == ">>>=" || op == "&=" || op == "^=" || op == "|=";
     }
 
-    void consumeSemicolon() {
+    void consumeSemicolon()
+    {
         int line;
 
         // Catch the very common case first: immediately a semicolon (char #59).
@@ -1502,14 +1568,16 @@ struct EsprimaParser {
 
     // Return true if provided expression is LeftHandSideExpression
 
-    bool isLeftHandSide(Node *expr) {
+    bool isLeftHandSide(Node* expr)
+    {
         return expr->is<Identifier>() || expr->is<MemberExpression>();
     }
 
     // 11.1.4 Array Initialiser
 
-    ArrayExpression *parseArrayInitialiser() {
-        std::vector<Expression *> elements;
+    ArrayExpression* parseArrayInitialiser()
+    {
+        std::vector<Expression*> elements;
 
         expect("[");
 
@@ -1533,10 +1601,12 @@ struct EsprimaParser {
 
     // 11.1.5 Object Initialiser
 
-    FunctionExpression *parsePropertyFunction(const std::vector<Identifier *> &param, EsprimaToken *first) {
+    FunctionExpression* parsePropertyFunction(
+        const std::vector<Identifier*>& param, EsprimaToken* first)
+    {
         WrapTrackingFunction wtf(*this);
         bool previousStrict;
-        BlockStatement *body;
+        BlockStatement* body;
 
         previousStrict = strict;
         body = parseFunctionSourceElements();
@@ -1547,9 +1617,10 @@ struct EsprimaParser {
         return wtf.close(delegate.createFunctionExpression(NULL, param, body));
     }
 
-    Expression *parseObjectPropertyKey() {
+    Expression* parseObjectPropertyKey()
+    {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken *token = lex();
+        EsprimaToken* token = lex();
 
         // Note: This function is called only from parseObjectProperty(), where
         // EOF and Punctuator tokens are already filtered out.
@@ -1564,17 +1635,17 @@ struct EsprimaParser {
         return wtf.close(delegate.createIdentifier(token->stringValue));
     }
 
-    Property *parseObjectProperty() {
+    Property* parseObjectProperty()
+    {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken *token;
-        Expression *key;
+        EsprimaToken* token;
+        Expression* key;
         Expression *id, *value;
-        std::vector<Identifier *> param;
+        std::vector<Identifier*> param;
 
         token = lookahead;
 
         if (token->type == Token::Identifier) {
-
             id = parseObjectPropertyKey();
 
             // Property Assignment: Getter and Setter.
@@ -1612,9 +1683,10 @@ struct EsprimaParser {
         }
     }
 
-    ObjectExpression *parseObjectInitialiser() {
-        std::vector<Property *> properties;
-        Property *property;
+    ObjectExpression* parseObjectInitialiser()
+    {
+        std::vector<Property*> properties;
+        Property* property;
         std::string name;
         int kind;
         std::map<std::string, int> map;
@@ -1634,7 +1706,9 @@ struct EsprimaParser {
                 ss << property->key->as<NumericLiteral>()->value;
                 name = ss.str();
             }
-            kind = (property->kind == "init") ? PropertyKind::Data : (property->kind == "get") ? PropertyKind::Get : PropertyKind::Set;
+            kind = (property->kind == "init")
+                ? PropertyKind::Data
+                : (property->kind == "get") ? PropertyKind::Get : PropertyKind::Set;
 
             if (map.count(name)) {
                 if (map[name] == PropertyKind::Data) {
@@ -1669,7 +1743,8 @@ struct EsprimaParser {
 
     // 11.1.6 The Grouping Operator
 
-    Expression *parseGroupExpression() {
+    Expression* parseGroupExpression()
+    {
         WrapTrackingFunction wtf(*this);
         return wtf.close(trackGroupExpression());
 
@@ -1688,10 +1763,11 @@ struct EsprimaParser {
 
     // 11.1 Primary Expressions
 
-    Expression *parsePrimaryExpression() {
+    Expression* parsePrimaryExpression()
+    {
         WrapTrackingFunction wtf(*this);
         int type;
-        EsprimaToken *token;
+        EsprimaToken* token;
 
         type = lookahead->type;
 
@@ -1748,8 +1824,9 @@ struct EsprimaParser {
 
     // 11.2 Left-Hand-Side Expressions
 
-    std::vector<Expression *> parseArguments() {
-        std::vector<Expression *> args;
+    std::vector<Expression*> parseArguments()
+    {
+        std::vector<Expression*> args;
 
         expect("(");
 
@@ -1768,9 +1845,10 @@ struct EsprimaParser {
         return args;
     }
 
-    Identifier *parseNonComputedProperty() {
+    Identifier* parseNonComputedProperty()
+    {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken *token = lex();
+        EsprimaToken* token = lex();
 
         if (!isIdentifierName(token)) {
             throwUnexpected(token);
@@ -1779,15 +1857,17 @@ struct EsprimaParser {
         return wtf.close(delegate.createIdentifier(token->stringValue));
     }
 
-    Identifier *parseNonComputedMember() {
+    Identifier* parseNonComputedMember()
+    {
         expect(".");
 
         return parseNonComputedProperty();
     }
 
-    Expression *parseComputedMember() {
+    Expression* parseComputedMember()
+    {
         WrapTrackingFunction wtf(*this);
-        Expression *expr;
+        Expression* expr;
 
         expect("[");
 
@@ -1798,10 +1878,11 @@ struct EsprimaParser {
         return wtf.close(expr);
     }
 
-    NewExpression *parseNewExpression() {
+    NewExpression* parseNewExpression()
+    {
         WrapTrackingFunction wtf(*this);
-        Expression *callee;
-        std::vector<Expression *> args;
+        Expression* callee;
+        std::vector<Expression*> args;
 
         expectKeyword("new");
         callee = parseLeftHandSideExpression();
@@ -1810,7 +1891,8 @@ struct EsprimaParser {
         return wtf.close(delegate.createNewExpression(callee, args));
     }
 
-    Expression *parseLeftHandSideExpressionAllowCall() {
+    Expression* parseLeftHandSideExpressionAllowCall()
+    {
         WrapTrackingFunction wtf(*this);
         return wtf.close(trackLeftHandSideExpressionAllowCall());
 
@@ -1838,7 +1920,8 @@ struct EsprimaParser {
         */
     }
 
-    Expression *parseLeftHandSideExpression() {
+    Expression* parseLeftHandSideExpression()
+    {
         WrapTrackingFunction wtf(*this);
         return wtf.close(trackLeftHandSideExpression());
 
@@ -1864,9 +1947,10 @@ struct EsprimaParser {
 
     // 11.3 Postfix Expressions
 
-    Expression *parsePostfixExpression() {
-        Expression *expr = parseLeftHandSideExpressionAllowCall();
-        EsprimaToken *token;
+    Expression* parsePostfixExpression()
+    {
+        Expression* expr = parseLeftHandSideExpressionAllowCall();
+        EsprimaToken* token;
 
         if (lookahead->type != Token::Punctuator) {
             return expr;
@@ -1874,7 +1958,8 @@ struct EsprimaParser {
 
         if ((match("++") || match("--")) && !peekLineTerminator()) {
             // 11.3.1, 11.3.2
-            if (strict && expr->is<Identifier>() && isRestrictedWord(expr->as<Identifier>()->name)) {
+            if (strict && expr->is<Identifier>()
+                && isRestrictedWord(expr->as<Identifier>()->name)) {
                 throwError(NULL, Messages::StrictLHSPostfix);
             }
 
@@ -1891,10 +1976,11 @@ struct EsprimaParser {
 
     // 11.4 Unary Operators
 
-    Expression *parseUnaryExpression() {
+    Expression* parseUnaryExpression()
+    {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken *token;
-        Expression *expr;
+        EsprimaToken* token;
+        Expression* expr;
 
         if (lookahead->type != Token::Punctuator && lookahead->type != Token::Keyword) {
             return wtf.close(parsePostfixExpression());
@@ -1904,7 +1990,8 @@ struct EsprimaParser {
             token = lex();
             expr = parseUnaryExpression();
             // 11.4.4, 11.4.5
-            if (strict && expr->is<Identifier>() && isRestrictedWord(expr->as<Identifier>()->name)) {
+            if (strict && expr->is<Identifier>()
+                && isRestrictedWord(expr->as<Identifier>()->name)) {
                 throwError(NULL, Messages::StrictLHSPrefix);
             }
 
@@ -1925,7 +2012,8 @@ struct EsprimaParser {
             token = lex();
             expr = parseUnaryExpression();
             expr = delegate.createUnaryExpression(token->stringValue, expr);
-            if (strict && expr->as<UnaryExpression>()->operator_ == "delete" && expr->as<UnaryExpression>()->argument->is<Identifier>()) {
+            if (strict && expr->as<UnaryExpression>()->operator_ == "delete"
+                && expr->as<UnaryExpression>()->argument->is<Identifier>()) {
                 throwError(NULL, Messages::StrictDelete);
             }
             return wtf.close(expr);
@@ -1934,14 +2022,15 @@ struct EsprimaParser {
         return wtf.close(parsePostfixExpression());
     }
 
-    int binaryPrecedence(EsprimaToken *token, bool allowIn) {
+    int binaryPrecedence(EsprimaToken* token, bool allowIn)
+    {
         int prec = 0;
 
         if (token->type != Token::Punctuator && token->type != Token::Keyword) {
             return 0;
         }
 
-        const std::string &value = token->stringValue;
+        const std::string& value = token->stringValue;
 
         if (value == "||") {
             prec = 1;
@@ -1967,7 +2056,9 @@ struct EsprimaParser {
             prec = 6;
         }
 
-        else if (value == "<" || value == ">" || value == "<=" || value == ">=" || value == "instanceof") {
+        else if (
+            value == "<" || value == ">" || value == "<=" || value == ">="
+            || value == "instanceof") {
             prec = 7;
         }
 
@@ -1998,18 +2089,19 @@ struct EsprimaParser {
     // 11.10 Binary Bitwise Operators
     // 11.11 Binary Logical Operators
 
-    Expression *parseBinaryExpression() {
+    Expression* parseBinaryExpression()
+    {
         WrapTrackingFunction wtf(*this);
-        Expression *expr;
-        EsprimaToken *token;
+        Expression* expr;
+        EsprimaToken* token;
         int prec;
         bool previousAllowIn;
         std::vector<int> precedenceStack;
-        std::vector<EsprimaToken *> operatorStack;
-        std::vector<Expression *> expressionStack;
-        Expression *right;
+        std::vector<EsprimaToken*> operatorStack;
+        std::vector<Expression*> expressionStack;
+        Expression* right;
         std::string operator_;
-        Expression *left;
+        Expression* left;
         int i;
 
         previousAllowIn = state.allowIn;
@@ -2030,12 +2122,16 @@ struct EsprimaParser {
         expressionStack.push_back(parseUnaryExpression());
 
         while ((prec = binaryPrecedence(lookahead, previousAllowIn)) > 0) {
-
             // Reduce: make a binary expression from the three topmost entries.
-            while ((expressionStack.size() > 1) && (prec <= precedenceStack[precedenceStack.size() - 1])) {
-                right = expressionStack[expressionStack.size() - 1]; expressionStack.pop_back();
-                operator_ = operatorStack[operatorStack.size() - 1]->stringValue; operatorStack.pop_back(); precedenceStack.pop_back();
-                left = expressionStack[expressionStack.size() - 1]; expressionStack.pop_back();
+            while ((expressionStack.size() > 1)
+                   && (prec <= precedenceStack[precedenceStack.size() - 1])) {
+                right = expressionStack[expressionStack.size() - 1];
+                expressionStack.pop_back();
+                operator_ = operatorStack[operatorStack.size() - 1]->stringValue;
+                operatorStack.pop_back();
+                precedenceStack.pop_back();
+                left = expressionStack[expressionStack.size() - 1];
+                expressionStack.pop_back();
                 expressionStack.push_back(delegate.createBinaryExpression(operator_, left, right));
             }
 
@@ -2052,7 +2148,8 @@ struct EsprimaParser {
         i = expressionStack.size() - 1;
         expr = expressionStack[i];
         while (i > 0) {
-            expr = delegate.createBinaryExpression(operatorStack[i - 1]->stringValue, expressionStack[i - 1], expr);
+            expr = delegate.createBinaryExpression(
+                operatorStack[i - 1]->stringValue, expressionStack[i - 1], expr);
             i--;
         }
         return wtf.close(expr);
@@ -2060,9 +2157,10 @@ struct EsprimaParser {
 
     // 11.12 Conditional Operator
 
-    Expression *parseConditionalExpression() {
+    Expression* parseConditionalExpression()
+    {
         WrapTrackingFunction wtf(*this);
-        Expression *expr;
+        Expression* expr;
         bool previousAllowIn;
         Expression *consequent, *alternate;
 
@@ -2085,9 +2183,10 @@ struct EsprimaParser {
 
     // 11.13 Assignment Operators
 
-    Expression *parseAssignmentExpression() {
+    Expression* parseAssignmentExpression()
+    {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken *token;
+        EsprimaToken* token;
         Expression *left, *right;
 
         token = lookahead;
@@ -2100,7 +2199,8 @@ struct EsprimaParser {
             }
 
             // 11.13.1
-            if (strict && left->is<Identifier>() && isRestrictedWord(left->as<Identifier>()->name)) {
+            if (strict && left->is<Identifier>()
+                && isRestrictedWord(left->as<Identifier>()->name)) {
                 throwError(token, Messages::StrictLHSAssignment);
             }
 
@@ -2114,12 +2214,13 @@ struct EsprimaParser {
 
     // 11.14 Comma Operator
 
-    Expression *parseExpression() {
+    Expression* parseExpression()
+    {
         WrapTrackingFunction wtf(*this);
-        Expression *expr = parseAssignmentExpression();
+        Expression* expr = parseAssignmentExpression();
 
         if (match(",")) {
-            std::vector<Expression *> expressions;
+            std::vector<Expression*> expressions;
             expressions.push_back(expr);
 
             while (index < length) {
@@ -2137,9 +2238,10 @@ struct EsprimaParser {
 
     // 12.1 Block
 
-    std::vector<Statement *> parseStatementList() {
-        std::vector<Statement *> list;
-        Statement *statement;
+    std::vector<Statement*> parseStatementList()
+    {
+        std::vector<Statement*> list;
+        Statement* statement;
 
         while (index < length) {
             if (match("}")) {
@@ -2155,9 +2257,10 @@ struct EsprimaParser {
         return list;
     }
 
-    BlockStatement *parseBlock() {
+    BlockStatement* parseBlock()
+    {
         WrapTrackingFunction wtf(*this);
-        std::vector<Statement *> block;
+        std::vector<Statement*> block;
 
         expect("{");
 
@@ -2170,9 +2273,10 @@ struct EsprimaParser {
 
     // 12.2 Variable Statement
 
-    Identifier *parseVariableIdentifier() {
+    Identifier* parseVariableIdentifier()
+    {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken *token = lex();
+        EsprimaToken* token = lex();
 
         if (token->type != Token::Identifier) {
             throwUnexpected(token);
@@ -2181,10 +2285,11 @@ struct EsprimaParser {
         return wtf.close(delegate.createIdentifier(token->stringValue));
     }
 
-    VariableDeclarator *parseVariableDeclaration(const std::string &kind) {
+    VariableDeclarator* parseVariableDeclaration(const std::string& kind)
+    {
         WrapTrackingFunction wtf(*this);
-        Identifier *id = parseVariableIdentifier();
-        Expression *init = NULL;
+        Identifier* id = parseVariableIdentifier();
+        Expression* init = NULL;
 
         // 12.2.1
         if (strict && isRestrictedWord(id->name)) {
@@ -2202,8 +2307,9 @@ struct EsprimaParser {
         return wtf.close(delegate.createVariableDeclarator(id, init));
     }
 
-    std::vector<VariableDeclarator *> parseVariableDeclarationList(const std::string &kind) {
-        std::vector<VariableDeclarator *> list;
+    std::vector<VariableDeclarator*> parseVariableDeclarationList(const std::string& kind)
+    {
+        std::vector<VariableDeclarator*> list;
 
         do {
             list.push_back(parseVariableDeclaration(kind));
@@ -2216,8 +2322,9 @@ struct EsprimaParser {
         return list;
     }
 
-    VariableDeclaration *parseVariableStatement() {
-        std::vector<VariableDeclarator *> declarations;
+    VariableDeclaration* parseVariableStatement()
+    {
+        std::vector<VariableDeclarator*> declarations;
 
         expectKeyword("var");
 
@@ -2232,9 +2339,10 @@ struct EsprimaParser {
     // Both are experimental and not in the specification yet.
     // see http://wiki.ecmascript.org/doku.php?id=harmony:const
     // and http://wiki.ecmascript.org/doku.php?id=harmony:let
-    VariableDeclaration *parseConstLetDeclaration(const std::string &kind) {
+    VariableDeclaration* parseConstLetDeclaration(const std::string& kind)
+    {
         WrapTrackingFunction wtf(*this);
-        std::vector<VariableDeclarator *> declarations;
+        std::vector<VariableDeclarator*> declarations;
 
         expectKeyword(kind);
 
@@ -2247,23 +2355,26 @@ struct EsprimaParser {
 
     // 12.3 Empty Statement
 
-    EmptyStatement *parseEmptyStatement() {
+    EmptyStatement* parseEmptyStatement()
+    {
         expect(";");
         return delegate.createEmptyStatement();
     }
 
     // 12.4 Expression Statement
 
-    ExpressionStatement *parseExpressionStatement() {
-        Expression *expr = parseExpression();
+    ExpressionStatement* parseExpressionStatement()
+    {
+        Expression* expr = parseExpression();
         consumeSemicolon();
         return delegate.createExpressionStatement(expr);
     }
 
     // 12.5 If statement
 
-    IfStatement *parseIfStatement() {
-        Expression *test;
+    IfStatement* parseIfStatement()
+    {
+        Expression* test;
         Statement *consequent, *alternate;
 
         expectKeyword("if");
@@ -2288,9 +2399,10 @@ struct EsprimaParser {
 
     // 12.6 Iteration Statements
 
-    DoWhileStatement *parseDoWhileStatement() {
-        Statement *body;
-        Expression *test;
+    DoWhileStatement* parseDoWhileStatement()
+    {
+        Statement* body;
+        Expression* test;
         bool oldInIteration;
 
         expectKeyword("do");
@@ -2317,9 +2429,10 @@ struct EsprimaParser {
         return delegate.createDoWhileStatement(body, test);
     }
 
-    WhileStatement *parseWhileStatement() {
-        Expression *test;
-        Statement *body;
+    WhileStatement* parseWhileStatement()
+    {
+        Expression* test;
+        Statement* body;
         bool oldInIteration;
 
         expectKeyword("while");
@@ -2340,20 +2453,22 @@ struct EsprimaParser {
         return delegate.createWhileStatement(test, body);
     }
 
-    VariableDeclaration *parseForVariableDeclaration() {
+    VariableDeclaration* parseForVariableDeclaration()
+    {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken *token = lex();
-        std::vector<VariableDeclarator *> declarations = parseVariableDeclarationList("var");
+        EsprimaToken* token = lex();
+        std::vector<VariableDeclarator*> declarations = parseVariableDeclarationList("var");
 
         return wtf.close(delegate.createVariableDeclaration(declarations, token->stringValue));
     }
 
-    Statement *parseForStatement() {
-        Node *init;
+    Statement* parseForStatement()
+    {
+        Node* init;
         Expression *test, *update;
-        Node *left;
-        Expression *right;
-        Statement *body;
+        Node* left;
+        Expression* right;
+        Statement* body;
         bool oldInIteration;
         bool leftIsUndefined = true;
 
@@ -2371,7 +2486,8 @@ struct EsprimaParser {
                 init = parseForVariableDeclaration();
                 state.allowIn = true;
 
-                if (init->as<VariableDeclaration>()->declarations.size() == 1 && matchKeyword("in")) {
+                if (init->as<VariableDeclaration>()->declarations.size() == 1
+                    && matchKeyword("in")) {
                     lex();
                     left = init;
                     leftIsUndefined = false;
@@ -2403,7 +2519,6 @@ struct EsprimaParser {
         }
 
         if (leftIsUndefined) {
-
             if (!match(";")) {
                 test = parseExpression();
             }
@@ -2423,15 +2538,16 @@ struct EsprimaParser {
 
         state.inIteration = oldInIteration;
 
-        return (leftIsUndefined) ?
-                static_cast<Statement *>(delegate.createForStatement(init, test, update, body)) :
-                static_cast<Statement *>(delegate.createForInStatement(left, right, body));
+        return (leftIsUndefined)
+            ? static_cast<Statement*>(delegate.createForStatement(init, test, update, body))
+            : static_cast<Statement*>(delegate.createForInStatement(left, right, body));
     }
 
     // 12.7 The continue statement
 
-    ContinueStatement *parseContinueStatement() {
-        Identifier *label = NULL;
+    ContinueStatement* parseContinueStatement()
+    {
+        Identifier* label = NULL;
 
         expectKeyword("continue");
 
@@ -2473,8 +2589,9 @@ struct EsprimaParser {
 
     // 12.8 The break statement
 
-    BreakStatement *parseBreakStatement() {
-        Identifier *label = NULL;
+    BreakStatement* parseBreakStatement()
+    {
+        Identifier* label = NULL;
 
         expectKeyword("break");
 
@@ -2516,8 +2633,9 @@ struct EsprimaParser {
 
     // 12.9 The return statement
 
-    ReturnStatement *parseReturnStatement() {
-        Expression *argument = NULL;
+    ReturnStatement* parseReturnStatement()
+    {
+        Expression* argument = NULL;
 
         expectKeyword("return");
 
@@ -2551,9 +2669,10 @@ struct EsprimaParser {
 
     // 12.10 The with statement
 
-    WithStatement *parseWithStatement() {
-        Expression *object;
-        Statement *body;
+    WithStatement* parseWithStatement()
+    {
+        Expression* object;
+        Statement* body;
 
         if (strict) {
             throwError(NULL, Messages::StrictModeWith);
@@ -2574,11 +2693,12 @@ struct EsprimaParser {
 
     // 12.10 The swith statement
 
-    SwitchCase *parseSwitchCase() {
+    SwitchCase* parseSwitchCase()
+    {
         WrapTrackingFunction wtf(*this);
-        Expression *test;
-        std::vector<Statement *> consequent;
-        Statement *statement;
+        Expression* test;
+        std::vector<Statement*> consequent;
+        Statement* statement;
 
         if (matchKeyword("default")) {
             lex();
@@ -2600,10 +2720,11 @@ struct EsprimaParser {
         return wtf.close(delegate.createSwitchCase(test, consequent));
     }
 
-    SwitchStatement *parseSwitchStatement() {
-        Expression *discriminant;
-        std::vector<SwitchCase *> cases;
-        SwitchCase *clause;
+    SwitchStatement* parseSwitchStatement()
+    {
+        Expression* discriminant;
+        std::vector<SwitchCase*> cases;
+        SwitchCase* clause;
         bool oldInSwitch, defaultFound;
 
         expectKeyword("switch");
@@ -2648,8 +2769,9 @@ struct EsprimaParser {
 
     // 12.13 The throw statement
 
-    ThrowStatement *parseThrowStatement() {
-        Expression *argument;
+    ThrowStatement* parseThrowStatement()
+    {
+        Expression* argument;
 
         expectKeyword("throw");
 
@@ -2666,10 +2788,11 @@ struct EsprimaParser {
 
     // 12.14 The try statement
 
-    CatchClause *parseCatchClause() {
+    CatchClause* parseCatchClause()
+    {
         WrapTrackingFunction wtf(*this);
-        Expression *param;
-        BlockStatement *body;
+        Expression* param;
+        BlockStatement* body;
 
         expectKeyword("catch");
 
@@ -2689,10 +2812,11 @@ struct EsprimaParser {
         return wtf.close(delegate.createCatchClause(param, body));
     }
 
-    TryStatement *parseTryStatement() {
-        BlockStatement *block;
-        CatchClause *handler = NULL;
-        BlockStatement *finalizer = NULL;
+    TryStatement* parseTryStatement()
+    {
+        BlockStatement* block;
+        CatchClause* handler = NULL;
+        BlockStatement* finalizer = NULL;
 
         expectKeyword("try");
 
@@ -2716,7 +2840,8 @@ struct EsprimaParser {
 
     // 12.15 The debugger statement
 
-    DebuggerStatement *parseDebuggerStatement() {
+    DebuggerStatement* parseDebuggerStatement()
+    {
         expectKeyword("debugger");
 
         consumeSemicolon();
@@ -2726,11 +2851,12 @@ struct EsprimaParser {
 
     // 12 Statements
 
-    Statement *parseStatement() {
+    Statement* parseStatement()
+    {
         WrapTrackingFunction wtf(*this);
         int type = lookahead->type;
-        Expression *expr;
-        Statement *labeledBody;
+        Expression* expr;
+        Statement* labeledBody;
         std::string key;
 
         if (type == Token::EOF) {
@@ -2739,47 +2865,29 @@ struct EsprimaParser {
 
         if (type == Token::Punctuator) {
             switch (lookahead->stringValue[0]) {
-            case ';':
-                return wtf.close(parseEmptyStatement());
-            case '{':
-                return wtf.close(parseBlock());
-            case '(':
-                return wtf.close(parseExpressionStatement());
-            default:
-                break;
+            case ';': return wtf.close(parseEmptyStatement());
+            case '{': return wtf.close(parseBlock());
+            case '(': return wtf.close(parseExpressionStatement());
+            default: break;
             }
         }
 
         if (type == Token::Keyword) {
-            const std::string &value = lookahead->stringValue;
-            if (value == "break")
-                return wtf.close(parseBreakStatement());
-            if (value == "continue")
-                return wtf.close(parseContinueStatement());
-            if (value == "debugger")
-                return wtf.close(parseDebuggerStatement());
-            if (value == "do")
-                return wtf.close(parseDoWhileStatement());
-            if (value == "for")
-                return wtf.close(parseForStatement());
-            if (value == "function")
-                return wtf.close(parseFunctionDeclaration());
-            if (value == "if")
-                return wtf.close(parseIfStatement());
-            if (value == "return")
-                return wtf.close(parseReturnStatement());
-            if (value == "switch")
-                return wtf.close(parseSwitchStatement());
-            if (value == "throw")
-                return wtf.close(parseThrowStatement());
-            if (value == "try")
-                return wtf.close(parseTryStatement());
-            if (value == "var")
-                return wtf.close(parseVariableStatement());
-            if (value == "while")
-                return wtf.close(parseWhileStatement());
-            if (value == "with")
-                return wtf.close(parseWithStatement());
+            const std::string& value = lookahead->stringValue;
+            if (value == "break") return wtf.close(parseBreakStatement());
+            if (value == "continue") return wtf.close(parseContinueStatement());
+            if (value == "debugger") return wtf.close(parseDebuggerStatement());
+            if (value == "do") return wtf.close(parseDoWhileStatement());
+            if (value == "for") return wtf.close(parseForStatement());
+            if (value == "function") return wtf.close(parseFunctionDeclaration());
+            if (value == "if") return wtf.close(parseIfStatement());
+            if (value == "return") return wtf.close(parseReturnStatement());
+            if (value == "switch") return wtf.close(parseSwitchStatement());
+            if (value == "throw") return wtf.close(parseThrowStatement());
+            if (value == "try") return wtf.close(parseTryStatement());
+            if (value == "var") return wtf.close(parseVariableStatement());
+            if (value == "while") return wtf.close(parseWhileStatement());
+            if (value == "with") return wtf.close(parseWithStatement());
         }
 
         expr = parseExpression();
@@ -2806,13 +2914,14 @@ struct EsprimaParser {
 
     // 13 Function Definition
 
-    BlockStatement *parseFunctionSourceElements() {
+    BlockStatement* parseFunctionSourceElements()
+    {
         WrapTrackingFunction wtf(*this);
-        Statement *sourceElement;
-        std::vector<Statement *> sourceElements;
-        EsprimaToken *token;
+        Statement* sourceElement;
+        std::vector<Statement*> sourceElements;
+        EsprimaToken* token;
         std::string directive;
-        EsprimaToken *firstRestricted;
+        EsprimaToken* firstRestricted;
         std::set<std::string> oldLabelSet;
         bool oldInIteration, oldInSwitch, oldInFunctionBody;
 
@@ -2874,18 +2983,20 @@ struct EsprimaParser {
         return wtf.close(delegate.createBlockStatement(sourceElements));
     }
 
-    struct ParseParams {
-        std::vector<Identifier *> params;
-        EsprimaToken *stricted;
-        EsprimaToken *firstRestricted;
+    struct ParseParams
+    {
+        std::vector<Identifier*> params;
+        EsprimaToken* stricted;
+        EsprimaToken* firstRestricted;
         std::string message;
     };
 
-    ParseParams *parseParams(EsprimaToken *firstRestricted) {
-        Identifier *param;
-        std::vector<Identifier *> params;
-        EsprimaToken *token;
-        EsprimaToken *stricted;
+    ParseParams* parseParams(EsprimaToken* firstRestricted)
+    {
+        Identifier* param;
+        std::vector<Identifier*> params;
+        EsprimaToken* token;
+        EsprimaToken* stricted;
         std::set<std::string> paramSet;
         std::string message;
         expect("(");
@@ -2927,7 +3038,7 @@ struct EsprimaParser {
 
         expect(")");
 
-        ParseParams *result = new ParseParams;
+        ParseParams* result = new ParseParams;
         result->params = params;
         result->stricted = stricted;
         result->firstRestricted = firstRestricted;
@@ -2935,14 +3046,15 @@ struct EsprimaParser {
         return result;
     }
 
-    FunctionDeclaration *parseFunctionDeclaration() {
+    FunctionDeclaration* parseFunctionDeclaration()
+    {
         WrapTrackingFunction wtf(*this);
-        Identifier *id;
-        std::vector<Identifier *>params;
-        BlockStatement *body;
+        Identifier* id;
+        std::vector<Identifier*> params;
+        BlockStatement* body;
         EsprimaToken *token, *stricted;
-        ParseParams *tmp;
-        EsprimaToken *firstRestricted;
+        ParseParams* tmp;
+        EsprimaToken* firstRestricted;
         std::string message;
         bool previousStrict;
 
@@ -2984,14 +3096,15 @@ struct EsprimaParser {
         return wtf.close(delegate.createFunctionDeclaration(id, params, body));
     }
 
-    FunctionExpression *parseFunctionExpression() {
+    FunctionExpression* parseFunctionExpression()
+    {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken *token;
-        Identifier *id = NULL;
+        EsprimaToken* token;
+        Identifier* id = NULL;
         EsprimaToken *stricted, *firstRestricted;
         std::string message;
-        std::vector<Identifier *> params;
-        BlockStatement *body;
+        std::vector<Identifier*> params;
+        BlockStatement* body;
         bool previousStrict;
 
         expectKeyword("function");
@@ -3037,7 +3150,8 @@ struct EsprimaParser {
 
     // 14 Program
 
-    Statement *parseSourceElement() {
+    Statement* parseSourceElement()
+    {
         if (lookahead->type == Token::Keyword) {
             if (lookahead->stringValue == "const" || lookahead->stringValue == "let")
                 return parseConstLetDeclaration(lookahead->stringValue);
@@ -3053,12 +3167,13 @@ struct EsprimaParser {
         return NULL;
     }
 
-    std::vector<Statement *> parseSourceElements() {
-        Statement *sourceElement;
-        std::vector<Statement *> sourceElements;
-        EsprimaToken *token;
+    std::vector<Statement*> parseSourceElements()
+    {
+        Statement* sourceElement;
+        std::vector<Statement*> sourceElements;
+        EsprimaToken* token;
         std::string directive;
-        EsprimaToken *firstRestricted;
+        EsprimaToken* firstRestricted;
 
         while (index < length) {
             token = lookahead;
@@ -3095,41 +3210,54 @@ struct EsprimaParser {
         return sourceElements;
     }
 
-    Program *parseProgram() {
+    Program* parseProgram()
+    {
         WrapTrackingFunction wtf(*this);
-        std::vector<Statement *> body;
+        std::vector<Statement*> body;
         strict = false;
         peek();
         body = parseSourceElements();
         return wtf.close(delegate.createProgram(body));
     }
 
-    struct EsprimaMarker {
-        EsprimaParser &parser;
+    struct EsprimaMarker
+    {
+        EsprimaParser& parser;
         int range[2];
-        SourceLocation *loc;
-        EsprimaMarker(EsprimaParser &parser) : parser(parser), loc() { range[0] = range[1] = 0; }
+        SourceLocation* loc;
+        EsprimaMarker(EsprimaParser& parser)
+            : parser(parser)
+            , loc()
+        {
+            range[0] = range[1] = 0;
+        }
 
-        void end() {
+        void end()
+        {
             range[1] = parser.index;
             loc->end->line = parser.lineNumber;
             loc->end->column = parser.index - parser.lineStart;
         }
 
-        void applyGroup(Node *node) {
-            node->groupRange[0] = range[0]; node->groupRange[1] = range[1];
+        void applyGroup(Node* node)
+        {
+            node->groupRange[0] = range[0];
+            node->groupRange[1] = range[1];
             node->groupLoc = loc;
             parser.delegate.postProcess(node);
         }
 
-        void apply(Node *node) {
-            node->range[0] = range[0]; node->range[1] = range[1];
+        void apply(Node* node)
+        {
+            node->range[0] = range[0];
+            node->range[1] = range[1];
             node->loc = loc;
             parser.delegate.postProcess(node);
         }
     };
 
-    std::unique_ptr<EsprimaMarker> createLocationMarker() {
+    std::unique_ptr<EsprimaMarker> createLocationMarker()
+    {
         std::unique_ptr<EsprimaMarker> marker(new EsprimaMarker(*this));
 
         marker->loc = new SourceLocation(pool);
@@ -3143,8 +3271,9 @@ struct EsprimaParser {
         return marker;
     }
 
-    Expression *trackGroupExpression() {
-        Expression *expr;
+    Expression* trackGroupExpression()
+    {
+        Expression* expr;
 
         skipComment();
         std::unique_ptr<EsprimaMarker> marker(createLocationMarker());
@@ -3160,7 +3289,8 @@ struct EsprimaParser {
         return expr;
     }
 
-    Expression *trackLeftHandSideExpression() {
+    Expression* trackLeftHandSideExpression()
+    {
         Expression *expr, *property;
 
         skipComment();
@@ -3185,10 +3315,11 @@ struct EsprimaParser {
         return expr;
     }
 
-    Expression *trackLeftHandSideExpressionAllowCall() {
-        Expression *expr;
-        std::vector<Expression *> args;
-        Expression *property;
+    Expression* trackLeftHandSideExpressionAllowCall()
+    {
+        Expression* expr;
+        std::vector<Expression*> args;
+        Expression* property;
 
         skipComment();
         std::unique_ptr<EsprimaMarker> marker(createLocationMarker());
@@ -3217,36 +3348,39 @@ struct EsprimaParser {
         return expr;
     }
 
-    void visitBinary(Node *node) {
+    void visitBinary(Node* node)
+    {
         if (node->is<LogicalExpression>()) {
-            LogicalExpression *expr = node->as<LogicalExpression>();
+            LogicalExpression* expr = node->as<LogicalExpression>();
             visit(expr, expr->left, expr->right);
-        }
-        else if (node->is<BinaryExpression>()) {
-            BinaryExpression *expr = node->as<BinaryExpression>();
+        } else if (node->is<BinaryExpression>()) {
+            BinaryExpression* expr = node->as<BinaryExpression>();
             visit(expr, expr->left, expr->right);
         }
     }
 
-    void visit(Expression *node, Expression *left, Expression *right) {
+    void visit(Expression* node, Expression* left, Expression* right)
+    {
         visitBinary(left);
         visitBinary(right);
 
         if (left->groupRange[0] || right->groupRange[1]) {
             int start = left->groupRange[0] ? left->groupRange[0] : left->range[0];
             int end = right->groupRange[1] ? right->groupRange[1] : right->range[1];
-            node->range[0] = start; node->range[1] = end;
+            node->range[0] = start;
+            node->range[1] = end;
         } else if (!node->range[1]) {
             int start = left->range[0];
             int end = right->range[1];
-            node->range[0] = start; node->range[1] = end;
+            node->range[0] = start;
+            node->range[1] = end;
         }
 
         if (left->groupLoc || right->groupLoc) {
             assert(left->groupLoc || left->loc);
             assert(right->groupLoc || right->loc);
-            Position *start = left->groupLoc ? left->groupLoc->start : left->loc->start;
-            Position *end = right->groupLoc ? right->groupLoc->end : right->loc->end;
+            Position* start = left->groupLoc ? left->groupLoc->start : left->loc->start;
+            Position* end = right->groupLoc ? right->groupLoc->end : right->loc->end;
             node->loc = new SourceLocation(pool);
             node->loc->start = start;
             node->loc->end = end;
@@ -3261,17 +3395,22 @@ struct EsprimaParser {
         }
     }
 
-    struct WrapTrackingFunction {
-        EsprimaParser &parser;
+    struct WrapTrackingFunction
+    {
+        EsprimaParser& parser;
         std::unique_ptr<EsprimaMarker> marker;
 
-        WrapTrackingFunction(EsprimaParser &parser) : parser(parser), marker() {
+        WrapTrackingFunction(EsprimaParser& parser)
+            : parser(parser)
+            , marker()
+        {
             parser.skipComment();
             marker = parser.createLocationMarker();
         }
 
-        template <typename T>
-        T *close(T *node) {
+        template<typename T>
+        T* close(T* node)
+        {
             if (node->loc == NULL) {
                 marker->apply(node);
             }
@@ -3282,7 +3421,8 @@ struct EsprimaParser {
         }
     };
 
-    Program *parse(const std::string &code) {
+    Program* parse(const std::string& code)
+    {
         source = code;
         index = 0;
         lineNumber = (source.size() > 0) ? 1 : 0;
@@ -3294,16 +3434,22 @@ struct EsprimaParser {
         return parseProgram();
     }
 
-    struct State {
+    struct State
+    {
         bool allowIn;
         std::set<std::string> labelSet;
         bool inFunctionBody;
         bool inIteration;
         bool inSwitch;
-        State() : allowIn(true), inFunctionBody(), inIteration(), inSwitch() {}
+        State()
+            : allowIn(true)
+            , inFunctionBody()
+            , inIteration()
+            , inSwitch()
+        {}
     };
 
-    Pool &pool;
+    Pool& pool;
     std::string source;
     bool strict;
     int index;
@@ -3311,220 +3457,267 @@ struct EsprimaParser {
     int lineStart;
     int length;
     SyntaxTreeDelegate delegate;
-    EsprimaToken *lookahead;
+    EsprimaToken* lookahead;
     State state;
 
-    EsprimaParser(Pool &pool) : pool(pool), strict(), index(), lineNumber(), lineStart(), length(), delegate(*this), lookahead() {}
+    EsprimaParser(Pool& pool)
+        : pool(pool)
+        , strict()
+        , index()
+        , lineNumber()
+        , lineStart()
+        , length()
+        , delegate(*this)
+        , lookahead()
+    {}
 };
 
-Program *esprima::parse(Pool &pool, const std::string &code) {
+Program* esprima::parse(Pool& pool, const std::string& code)
+{
     return EsprimaParser(pool).parse(code);
 }
 
-void visit(Visitor *visitor, Node *node) {
+void visit(Visitor* visitor, Node* node)
+{
     if (node) node->accept(visitor);
 }
 
-template <typename T>
-void visit(Visitor *visitor, const std::vector<T *> &nodes) {
+template<typename T>
+void visit(Visitor* visitor, const std::vector<T*>& nodes)
+{
     for (size_t i = 0; i < nodes.size(); i++) {
         visit(visitor, nodes[i]);
     }
 }
 
-void Visitor::visitChildren(Program *node) {
+void Visitor::visitChildren(Program* node)
+{
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(Identifier *) {
-}
+void Visitor::visitChildren(Identifier*)
+{}
 
-void Visitor::visitChildren(BlockStatement *node) {
+void Visitor::visitChildren(BlockStatement* node)
+{
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(EmptyStatement *) {
-}
+void Visitor::visitChildren(EmptyStatement*)
+{}
 
-void Visitor::visitChildren(ExpressionStatement *node) {
+void Visitor::visitChildren(ExpressionStatement* node)
+{
     ::visit(this, node->expression);
 }
 
-void Visitor::visitChildren(IfStatement *node) {
+void Visitor::visitChildren(IfStatement* node)
+{
     ::visit(this, node->test);
     ::visit(this, node->consequent);
     ::visit(this, node->alternate);
 }
 
-void Visitor::visitChildren(LabeledStatement *node) {
+void Visitor::visitChildren(LabeledStatement* node)
+{
     ::visit(this, node->label);
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(BreakStatement *node) {
+void Visitor::visitChildren(BreakStatement* node)
+{
     ::visit(this, node->label);
 }
 
-void Visitor::visitChildren(ContinueStatement *node) {
+void Visitor::visitChildren(ContinueStatement* node)
+{
     ::visit(this, node->label);
 }
 
-void Visitor::visitChildren(WithStatement *node) {
+void Visitor::visitChildren(WithStatement* node)
+{
     ::visit(this, node->object);
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(SwitchCase *node) {
+void Visitor::visitChildren(SwitchCase* node)
+{
     ::visit(this, node->test);
     ::visit(this, node->consequent);
 }
 
-void Visitor::visitChildren(SwitchStatement *node) {
+void Visitor::visitChildren(SwitchStatement* node)
+{
     ::visit(this, node->discriminant);
     ::visit(this, node->cases);
 }
 
-void Visitor::visitChildren(ReturnStatement *node) {
+void Visitor::visitChildren(ReturnStatement* node)
+{
     ::visit(this, node->argument);
 }
 
-void Visitor::visitChildren(ThrowStatement *node) {
+void Visitor::visitChildren(ThrowStatement* node)
+{
     ::visit(this, node->argument);
 }
 
-void Visitor::visitChildren(CatchClause *node) {
+void Visitor::visitChildren(CatchClause* node)
+{
     ::visit(this, node->param);
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(TryStatement *node) {
+void Visitor::visitChildren(TryStatement* node)
+{
     ::visit(this, node->block);
     ::visit(this, node->handler);
     ::visit(this, node->finalizer);
 }
 
-void Visitor::visitChildren(WhileStatement *node) {
+void Visitor::visitChildren(WhileStatement* node)
+{
     ::visit(this, node->test);
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(DoWhileStatement *node) {
+void Visitor::visitChildren(DoWhileStatement* node)
+{
     ::visit(this, node->body);
     ::visit(this, node->test);
 }
 
-void Visitor::visitChildren(ForStatement *node) {
+void Visitor::visitChildren(ForStatement* node)
+{
     ::visit(this, node->init);
     ::visit(this, node->test);
     ::visit(this, node->update);
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(ForInStatement *node) {
+void Visitor::visitChildren(ForInStatement* node)
+{
     ::visit(this, node->left);
     ::visit(this, node->right);
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(DebuggerStatement *) {
-}
+void Visitor::visitChildren(DebuggerStatement*)
+{}
 
-void Visitor::visitChildren(FunctionDeclaration *node) {
+void Visitor::visitChildren(FunctionDeclaration* node)
+{
     ::visit(this, node->id);
     ::visit(this, node->params);
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(VariableDeclarator *node) {
+void Visitor::visitChildren(VariableDeclarator* node)
+{
     ::visit(this, node->id);
     ::visit(this, node->init);
 }
 
-void Visitor::visitChildren(VariableDeclaration *node) {
+void Visitor::visitChildren(VariableDeclaration* node)
+{
     ::visit(this, node->declarations);
 }
 
-void Visitor::visitChildren(ThisExpression *) {
-}
+void Visitor::visitChildren(ThisExpression*)
+{}
 
-void Visitor::visitChildren(ArrayExpression *node) {
+void Visitor::visitChildren(ArrayExpression* node)
+{
     ::visit(this, node->elements);
 }
 
-void Visitor::visitChildren(Property *node) {
+void Visitor::visitChildren(Property* node)
+{
     ::visit(this, node->key);
     ::visit(this, node->value);
 }
 
-void Visitor::visitChildren(ObjectExpression *node) {
+void Visitor::visitChildren(ObjectExpression* node)
+{
     ::visit(this, node->properties);
 }
 
-void Visitor::visitChildren(FunctionExpression *node) {
+void Visitor::visitChildren(FunctionExpression* node)
+{
     ::visit(this, node->id);
     ::visit(this, node->params);
     ::visit(this, node->body);
 }
 
-void Visitor::visitChildren(SequenceExpression *node) {
+void Visitor::visitChildren(SequenceExpression* node)
+{
     ::visit(this, node->expressions);
 }
 
-void Visitor::visitChildren(UnaryExpression *node) {
+void Visitor::visitChildren(UnaryExpression* node)
+{
     ::visit(this, node->argument);
 }
 
-void Visitor::visitChildren(BinaryExpression *node) {
+void Visitor::visitChildren(BinaryExpression* node)
+{
     ::visit(this, node->left);
     ::visit(this, node->right);
 }
 
-void Visitor::visitChildren(AssignmentExpression *node) {
+void Visitor::visitChildren(AssignmentExpression* node)
+{
     ::visit(this, node->left);
     ::visit(this, node->right);
 }
 
-void Visitor::visitChildren(UpdateExpression *node) {
+void Visitor::visitChildren(UpdateExpression* node)
+{
     ::visit(this, node->argument);
 }
 
-void Visitor::visitChildren(LogicalExpression *node) {
+void Visitor::visitChildren(LogicalExpression* node)
+{
     ::visit(this, node->left);
     ::visit(this, node->right);
 }
 
-void Visitor::visitChildren(ConditionalExpression *node) {
+void Visitor::visitChildren(ConditionalExpression* node)
+{
     ::visit(this, node->test);
     ::visit(this, node->consequent);
     ::visit(this, node->alternate);
 }
 
-void Visitor::visitChildren(NewExpression *node) {
+void Visitor::visitChildren(NewExpression* node)
+{
     ::visit(this, node->callee);
     ::visit(this, node->arguments);
 }
 
-void Visitor::visitChildren(CallExpression *node) {
+void Visitor::visitChildren(CallExpression* node)
+{
     ::visit(this, node->callee);
     ::visit(this, node->arguments);
 }
 
-void Visitor::visitChildren(MemberExpression *node) {
+void Visitor::visitChildren(MemberExpression* node)
+{
     ::visit(this, node->object);
     ::visit(this, node->property);
 }
 
-void Visitor::visitChildren(NullLiteral *) {
-}
+void Visitor::visitChildren(NullLiteral*)
+{}
 
-void Visitor::visitChildren(RegExpLiteral *) {
-}
+void Visitor::visitChildren(RegExpLiteral*)
+{}
 
-void Visitor::visitChildren(StringLiteral *) {
-}
+void Visitor::visitChildren(StringLiteral*)
+{}
 
-void Visitor::visitChildren(NumericLiteral *) {
-}
+void Visitor::visitChildren(NumericLiteral*)
+{}
 
-void Visitor::visitChildren(BooleanLiteral *) {
-}
+void Visitor::visitChildren(BooleanLiteral*)
+{}
