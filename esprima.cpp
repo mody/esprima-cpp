@@ -3232,9 +3232,9 @@ struct EsprimaParser {
         visitBinary(left);
         visitBinary(right);
 
-        if (left->groupRange || right->groupRange) {
-            int start = left->groupRange ? left->groupRange[0] : left->range[0];
-            int end = right->groupRange ? right->groupRange[1] : right->range[1];
+        if (left->groupRange[0] || right->groupRange[1]) {
+            int start = left->groupRange[0] ? left->groupRange[0] : left->range[0];
+            int end = right->groupRange[1] ? right->groupRange[1] : right->range[1];
             node->range[0] = start; node->range[1] = end;
         } else if (!node->range[1]) {
             int start = left->range[0];
