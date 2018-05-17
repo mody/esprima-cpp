@@ -137,7 +137,7 @@ struct EsprimaToken : Poolable
     bool octal;
     int lineNumber;
     int lineStart;
-    int range[2];
+    std::array<int, 2> range;
 
     EsprimaToken(Pool& pool)
         : Poolable(pool)
@@ -3223,7 +3223,7 @@ struct EsprimaParser
     struct EsprimaMarker
     {
         EsprimaParser& parser;
-        int range[2];
+        std::array<int, 2> range;
         SourceLocation* loc;
         EsprimaMarker(EsprimaParser& parser)
             : parser(parser)
@@ -3232,11 +3232,18 @@ struct EsprimaParser
             range[0] = range[1] = 0;
         }
 
+        ~EsprimaMarker() {
+            if (!range[1]) {
+                end();
+            }
+        }
+
         void end()
         {
             range[1] = parser.index;
             loc->end->line = parser.lineNumber;
             loc->end->column = parser.index - parser.lineStart;
+            loc->to = parser.index;
         }
 
         void applyGroup(Node* node)
@@ -3264,6 +3271,7 @@ struct EsprimaParser
         marker->loc->start = new Position(pool);
         marker->loc->start->line = lineNumber;
         marker->loc->start->column = index - lineStart;
+        marker->loc->from = index;
         marker->loc->end = new Position(pool);
         marker->loc->end->line = lineNumber;
         marker->loc->end->column = index - lineStart;

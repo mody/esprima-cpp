@@ -50,10 +50,13 @@ struct SourceLocation : Poolable
 {
     Position* start;
     Position* end;
+    size_t from, to;
     SourceLocation(Pool& pool)
         : Poolable(pool)
         , start()
         , end()
+        , from(0)
+        , to(0)
     {}
 };
 
@@ -199,8 +202,8 @@ struct Node : Poolable
 {
     SourceLocation* loc;
     SourceLocation* groupLoc;
-    int range[2];
-    int groupRange[2];
+    std::array<int, 2> range;
+    std::array<int, 2> groupRange;
     Node(Pool& pool)
         : Poolable(pool)
         , loc()
