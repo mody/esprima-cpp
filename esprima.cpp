@@ -2995,8 +2995,8 @@ struct EsprimaParser
     {
         Identifier* param;
         std::vector<Identifier*> params;
-        EsprimaToken* token;
-        EsprimaToken* stricted;
+        EsprimaToken* token = nullptr;
+        EsprimaToken* stricted = nullptr;
         std::set<std::string> paramSet;
         std::string message;
         expect("(");
@@ -3052,9 +3052,9 @@ struct EsprimaParser
         Identifier* id;
         std::vector<Identifier*> params;
         BlockStatement* body;
-        EsprimaToken *token, *stricted;
-        ParseParams* tmp;
-        EsprimaToken* firstRestricted;
+        EsprimaToken *token = nullptr, *stricted = nullptr;
+        ParseParams* tmp = nullptr;
+        EsprimaToken* firstRestricted = nullptr;
         std::string message;
         bool previousStrict;
 
@@ -3099,9 +3099,9 @@ struct EsprimaParser
     FunctionExpression* parseFunctionExpression()
     {
         WrapTrackingFunction wtf(*this);
-        EsprimaToken* token;
-        Identifier* id = NULL;
-        EsprimaToken *stricted, *firstRestricted;
+        EsprimaToken* token = nullptr;
+        Identifier* id = nullptr;
+        EsprimaToken *stricted = nullptr, *firstRestricted = nullptr;
         std::string message;
         std::vector<Identifier*> params;
         BlockStatement* body;
@@ -3171,9 +3171,9 @@ struct EsprimaParser
     {
         Statement* sourceElement;
         std::vector<Statement*> sourceElements;
-        EsprimaToken* token;
+        EsprimaToken* token = nullptr;
         std::string directive;
-        EsprimaToken* firstRestricted;
+        EsprimaToken* firstRestricted = nullptr;
 
         while (index < length) {
             token = lookahead;
