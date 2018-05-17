@@ -3273,8 +3273,6 @@ struct EsprimaParser
         marker->loc->start->column = index - lineStart;
         marker->loc->from = index;
         marker->loc->end = new Position(pool);
-        marker->loc->end->line = lineNumber;
-        marker->loc->end->column = index - lineStart;
 
         return marker;
     }
